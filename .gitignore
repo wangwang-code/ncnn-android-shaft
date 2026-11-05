@@ -1,0 +1,9 @@
+build*/
+dist/
+aar-staging/
+central_bundle/
+*.aar
+*.zip
+*.log
+.DS_Store
+.idea/

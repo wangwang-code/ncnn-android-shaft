@@ -1,0 +1,130 @@
+name: Build and Publish ncnn-android-shaft
+
+on:
+  workflow_dispatch:
+    inputs:
+      ncnn_version:
+        description: 'Tencent/ncnn Git tag/branch'
+        required: true
+        default: '20241226'
+      create_release:
+        description: 'Publish as GitHub Release'
+        type: boolean
+        default: true
+      publish_to_central:
+        description: 'Publish to Maven Central Portal'
+        type: boolean
+        default: true
+      artifact_version:
+        description: 'Version to publish (default: auto for 20241226-shaft-{commit_hash})'
+        required: false
+        default: 'auto'
+      reuse_cached_aar:
+        description: 'Reuse previously built AAR (fast publish, skips compilation)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+
+      - name: Check for cached AAR artifact
+        id: check-cache
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event.inputs.reuse_cached_aar }}" = "true" ]; then
+            echo "Searching for previous successful AAR artifact..."
+            RUN_ID=$(gh run list --repo "${{ github.repository }}" --workflow build-aar.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+            if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+              echo "Downloading AAR from run $RUN_ID..."
+              mkdir -p /tmp/cached_aar
+              if gh run download "$RUN_ID" --repo "${{ github.repository }}" -n ncnn-android-shaft-aar -D /tmp/cached_aar 2>/dev/null; then
+                if [ -f /tmp/cached_aar/ncnn-android-shaft.aar ]; then
+                  mkdir -p dist
+                  cp /tmp/cached_aar/ncnn-android-shaft.aar dist/ncnn-android-shaft.aar
+                  echo "Found cached AAR ($(stat -c%s dist/ncnn-android-shaft.aar) bytes). Skipping C++ compilation!"
+                  echo "found=true" >> "$GITHUB_OUTPUT"
+                fi
+              fi
+            fi
+          fi
+
+      - name: Setup Android NDK
+        if: steps.check-cache.outputs.found != 'true'
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
+
+      - name: Setup ccache
+        if: steps.check-cache.outputs.found != 'true'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-ncnn-ccache
+          max-size: 2G
+
+      - name: Build Android AAR
+        if: steps.check-cache.outputs.found != 'true'
+        run: |
+          chmod +x scripts/build-android.sh
+          ./scripts/build-android.sh arm64-v8a 24
+
+      - name: Upload AAR Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ncnn-android-shaft-aar
+          path: dist/ncnn-android-shaft.aar
+
+      - name: Create Release
+        if: ${{ (github.event.inputs.create_release == 'true') || startsWith(github.ref, 'refs/tags/') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          if [[ "$TAG_NAME" != v* ]]; then
+            TAG_NAME="v20241226-shaft-${SHORT_SHA}"
+          fi
+          gh release create "$TAG_NAME" dist/ncnn-android-shaft.aar \
+            --repo "${{ github.repository }}" \
+            --title "NCNN Custom AAR ($TAG_NAME)" \
+            --notes "Custom unified NCNN AAR for Pixiv-Shaft: single libncnn.so (Vulkan enabled, static libc++), dynamically linked realcugan-ncnn (with TILE progress), rife-ncnn, realsr-ncnn, and rembg-ncnn. 16KB page aligned."
+
+      - name: Publish to Maven Central Portal
+        if: ${{ github.event.inputs.publish_to_central == 'true' || github.event.inputs.publish_to_central == '' }}
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSPHRASE }}
+          SONATYPE_CENTRAL_TOKEN: ${{ secrets.SONATYPE_CENTRAL_TOKEN }}
+        run: |
+          if [ -n "$GPG_PRIVATE_KEY" ]; then
+            echo "$GPG_PRIVATE_KEY" | gpg --batch --import || true
+          fi
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          VER="${{ github.event.inputs.artifact_version }}"
+          if [ -z "$VER" ] || [ "$VER" = "auto" ]; then
+            VER="20241226-shaft-${SHORT_SHA}"
+          fi
+          echo "Publishing version to Maven Central: $VER"
+          python3 ./publish_central.py \
+            --aar dist/ncnn-android-shaft.aar \
+            --group-id io.github.wangwang-code \
+            --artifact-id ncnn-android-shaft \
+            --version "$VER" \
+            --gpg-passphrase "$GPG_PASSPHRASE" \
+            --central-token "$SONATYPE_CENTRAL_TOKEN" \
+            --publishing-type AUTOMATIC
+
+      - name: Upload Central Bundle Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-bundle
+          path: ./bundle.zip
+          if-no-files-found: ignore
