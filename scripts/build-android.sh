@@ -91,15 +91,20 @@ if [ ! -d "realcugan-ncnn-vulkan" ]; then
     git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/nihui/realcugan-ncnn-vulkan.git realcugan-ncnn-vulkan
 fi
 cd realcugan-ncnn-vulkan
-# 移除无用的 glslang 伪依赖检查
 sed -i 's/set(USE_SYSTEM_NCNN OFF)/# set(USE_SYSTEM_NCNN OFF)/g' src/CMakeLists.txt
 sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
-# 注入 TILE %d 进度补丁 (保证分块进度输出)
-if ! grep -q 'TILE %d' src/realcugan.cpp; then
-    echo "Injecting TILE progress into realcugan.cpp..."
-    sed -i '/for (int yi = 0; yi < ytiles; yi++)/a\        for (int xi = 0; xi < xtiles; xi++) { fprintf(stderr, "TILE %d\\n", yi * xtiles + xi); fflush(stderr); }' src/realcugan.cpp || true
-fi
+# 精准安全注入 TILE %d 进度
+python3 -c '
+with open("src/realcugan.cpp", "r") as f:
+    c = f.read()
+target = "for (int xi = 0; xi < xtiles; xi++)\n        {"
+if target in c and "TILE %d" not in c:
+    c = c.replace(target, target + "\n            fprintf(stderr, \"TILE %d\\n\", yi * xtiles + xi); fflush(stderr);")
+    with open("src/realcugan.cpp", "w") as f:
+        f.write(c)
+    print("Injected TILE progress successfully.")
+'
 mkdir -p build && cd build
 cmake "${CLI_CMAKE_ARGS[@]}" ../src
 make -j$(nproc)
