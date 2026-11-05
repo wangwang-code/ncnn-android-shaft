@@ -58,13 +58,12 @@ if [ ! -d "ncnn" ]; then
     git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/Tencent/ncnn.git ncnn
 fi
 
-# 3. 编译 libncnn.so (保留 RTTI 允许下游自定义 Layer 如 Warp 继承 ncnn::Layer)
+# 3. 编译 libncnn.so (只开 NCNN_SHARED_LIB，避免 glslang/SPIRV 被打成动态库)
 echo "=== Compiling NCNN Shared Library ==="
 mkdir -p ncnn/build
 cd ncnn/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_SHARED_LIB=ON \
-    -DBUILD_SHARED_LIBS=ON \
     -DNCNN_VULKAN=ON \
     -DNCNN_OPENMP=ON \
     -DNCNN_DISABLE_RTTI=OFF \
@@ -176,7 +175,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
 
-# 8. 收集产物并 Strip
+# 8. 收集产物并 Strip，自动解决动态依赖闭环
 echo "=== Packaging JNI Libs ==="
 JNI_LIBS_DIR="${AAR_DIR}/jni/${ABI}"
 mkdir -p "${JNI_LIBS_DIR}"
@@ -187,6 +186,24 @@ cp "${BUILD_ROOT}/rife-ncnn-vulkan/build/rife-ncnn-vulkan" "${JNI_LIBS_DIR}/libr
 cp "${BUILD_ROOT}/realsr-ncnn-vulkan/build/realsr-ncnn-vulkan" "${JNI_LIBS_DIR}/librealsr_ncnn.so"
 cp "${BUILD_ROOT}/rembg-ncnn/build/rembg-ncnn" "${JNI_LIBS_DIR}/librembg_ncnn.so"
 
+# 打包官方 NDK 标准 libomp.so (支持多线程 OpenMP)
+NDK_OMP=$(find "${ANDROID_NDK_ROOT}" -name "libomp.so" | grep "aarch64" | head -n 1)
+if [ -n "${NDK_OMP}" ]; then
+    echo "Bundling NDK libomp.so: ${NDK_OMP}"
+    cp "${NDK_OMP}" "${JNI_LIBS_DIR}/libomp.so"
+fi
+
+# 检查 libncnn.so 是否含有 SPIRV / glslang 动态库依赖，若有则自动打入
+READELF_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-readelf*" | head -n 1)
+if [ -n "${READELF_TOOL}" ]; then
+    echo "Running ELF dynamic dependency audit..."
+    if "${READELF_TOOL}" -d "${JNI_LIBS_DIR}/libncnn.so" 2>/dev/null | grep -q "libSPIRV.so"; then
+        echo "libncnn.so requires libSPIRV.so, bundling SPIRV and glslang..."
+        find "${BUILD_ROOT}" -name "libSPIRV.so" -exec cp {} "${JNI_LIBS_DIR}/" \;
+        find "${BUILD_ROOT}" -name "libglslang*.so" -exec cp {} "${JNI_LIBS_DIR}/" \;
+    fi
+fi
+
 # 查找 llvm-strip 剥除调试符号
 STRIP_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-strip*" | head -n 1)
 if [ -n "${STRIP_TOOL}" ]; then
@@ -194,7 +211,7 @@ if [ -n "${STRIP_TOOL}" ]; then
     "${STRIP_TOOL}" --strip-unneeded "${JNI_LIBS_DIR}"/*.so
 fi
 
-echo "=== Resulting Binaries ==="
+echo "=== Resulting Binaries in AAR ==="
 ls -lh "${JNI_LIBS_DIR}"
 
 # 9. 生成 Android AAR
