@@ -72,7 +72,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_BUILD_EXAMPLES=OFF \
     -DNCNN_BUILD_TOOLS=OFF \
     -DNCNN_INSTALL_SDK=OFF \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp" \
     ..
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -108,7 +108,7 @@ CLI_CMAKE_ARGS=(
     "${COMMON_CMAKE_FLAGS[@]}"
     "-DUSE_SYSTEM_NCNN=ON"
     "-Dncnn_DIR=${NCNN_DIR}"
-    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384"
+    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN"
 )
 
 # 4. Clone & 编译 realcugan-ncnn-vulkan
@@ -120,6 +120,7 @@ cd realcugan-ncnn-vulkan
 sed -i 's/set(USE_SYSTEM_NCNN OFF)/# set(USE_SYSTEM_NCNN OFF)/g' src/CMakeLists.txt
 sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
+sed -i 's/\${OpenMP_CXX_LIBRARIES}/-static-openmp/g' src/CMakeLists.txt
 # 精准安全注入 TILE %d 进度
 python3 -c '
 with open("src/realcugan.cpp", "r") as f:
@@ -145,6 +146,7 @@ cd rife-ncnn-vulkan
 sed -i 's/set(USE_SYSTEM_NCNN OFF)/# set(USE_SYSTEM_NCNN OFF)/g' src/CMakeLists.txt
 sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
+sed -i 's/\${OpenMP_CXX_LIBRARIES}/-static-openmp/g' src/CMakeLists.txt
 sed -i 's/opt.use_shader_pack8/false/g' src/warp.cpp
 mkdir -p build && cd build
 cmake "${CLI_CMAKE_ARGS[@]}" ../src
@@ -160,6 +162,7 @@ cd realsr-ncnn-vulkan
 sed -i 's/set(USE_SYSTEM_NCNN OFF)/# set(USE_SYSTEM_NCNN OFF)/g' src/CMakeLists.txt
 sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
+sed -i 's/\${OpenMP_CXX_LIBRARIES}/-static-openmp/g' src/CMakeLists.txt
 mkdir -p build && cd build
 cmake "${CLI_CMAKE_ARGS[@]}" ../src
 cmake --build . -j $(nproc)
@@ -170,7 +173,7 @@ echo "=== Compiling rembg-ncnn ==="
 mkdir -p rembg-ncnn/build && cd rembg-ncnn/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -Dncnn_DIR="${NCNN_DIR}" \
-    -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
+    -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
     "${WORKSPACE_DIR}/src/rembg"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -186,8 +189,8 @@ cp "${BUILD_ROOT}/rife-ncnn-vulkan/build/rife-ncnn-vulkan" "${JNI_LIBS_DIR}/libr
 cp "${BUILD_ROOT}/realsr-ncnn-vulkan/build/realsr-ncnn-vulkan" "${JNI_LIBS_DIR}/librealsr_ncnn.so"
 cp "${BUILD_ROOT}/rembg-ncnn/build/rembg-ncnn" "${JNI_LIBS_DIR}/librembg_ncnn.so"
 
-# 打包官方 NDK 标准 libomp.so (支持多线程 OpenMP)
-NDK_OMP=$(find "${ANDROID_NDK_ROOT}" -name "libomp.so" | grep "aarch64" | head -n 1)
+# 打包官方 NDK 标准 libomp.so 作为双保险兜底
+NDK_OMP=$(find "${ANDROID_NDK_ROOT}" -name "libomp.so" | grep -E "aarch64|arm64" | head -n 1)
 if [ -n "${NDK_OMP}" ]; then
     echo "Bundling NDK libomp.so: ${NDK_OMP}"
     cp "${NDK_OMP}" "${JNI_LIBS_DIR}/libomp.so"
@@ -209,6 +212,14 @@ STRIP_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-str
 if [ -n "${STRIP_TOOL}" ]; then
     echo "Stripping binaries with ${STRIP_TOOL}..."
     "${STRIP_TOOL}" --strip-unneeded "${JNI_LIBS_DIR}"/*.so
+fi
+
+if [ -n "${READELF_TOOL}" ]; then
+    echo "=== Verified ELF Dynamic Dependencies (DT_NEEDED) ==="
+    for f in "${JNI_LIBS_DIR}"/*.so; do
+        echo "-> $(basename "$f") dependencies:"
+        "${READELF_TOOL}" -d "$f" | grep NEEDED || true
+    done
 fi
 
 echo "=== Resulting Binaries in AAR ==="
