@@ -54,8 +54,8 @@ fi
 
 # 2. Clone Tencent/ncnn
 if [ ! -d "ncnn" ]; then
-    echo "Cloning Tencent/ncnn..."
-    git clone --depth 1 --recurse-submodules https://github.com/Tencent/ncnn.git ncnn
+    echo "Cloning Tencent/ncnn with submodules..."
+    git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/Tencent/ncnn.git ncnn
 fi
 
 # 3. 编译 libncnn.so
@@ -76,53 +76,53 @@ make install
 cd "${BUILD_ROOT}"
 
 NCNN_DIR="${BUILD_ROOT}/install/lib/cmake/ncnn"
+GLSLANG_TARGET_DIR=$(find "${BUILD_ROOT}/install" -name "glslangTargets.cmake" -exec dirname {} \; | head -n 1)
+echo "Found NCNN CMake: ${NCNN_DIR}"
+echo "Found Glslang CMake: ${GLSLANG_TARGET_DIR}"
+
+CLI_CMAKE_ARGS=(
+    "${COMMON_CMAKE_FLAGS[@]}"
+    "-DUSE_SYSTEM_NCNN=ON"
+    "-Dncnn_DIR=${NCNN_DIR}"
+    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384"
+)
+if [ -n "${GLSLANG_TARGET_DIR}" ]; then
+    CLI_CMAKE_ARGS+=("-DGLSLANG_TARGET_DIR=${GLSLANG_TARGET_DIR}")
+fi
 
 # 4. Clone & 编译 realcugan-ncnn-vulkan
 echo "=== Compiling realcugan-ncnn-vulkan ==="
 if [ ! -d "realcugan-ncnn-vulkan" ]; then
-    git clone --depth 1 https://github.com/nihui/realcugan-ncnn-vulkan.git realcugan-ncnn-vulkan
+    git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/nihui/realcugan-ncnn-vulkan.git realcugan-ncnn-vulkan
 fi
 cd realcugan-ncnn-vulkan
-# 注入 TILE %d 进度补丁
+# 注入 TILE %d 进度补丁 (保证分块进度输出)
 if ! grep -q 'TILE %d' src/realcugan.cpp; then
     echo "Injecting TILE progress into realcugan.cpp..."
-    sed -i '/int RealCUGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const/!b;n;a\    const int xtiles_cnt = (inimage.w + tilesize - 1) / tilesize;' src/realcugan.cpp || true
     sed -i '/for (int yi = 0; yi < ytiles; yi++)/a\        for (int xi = 0; xi < xtiles; xi++) { fprintf(stderr, "TILE %d\\n", yi * xtiles + xi); fflush(stderr); }' src/realcugan.cpp || true
 fi
 mkdir -p build && cd build
-cmake "${COMMON_CMAKE_FLAGS[@]}" \
-    -Dncnn_DIR="${NCNN_DIR}" \
-    -DUSE_SYSTEM_NCNN=ON \
-    -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
-    ..
+cmake "${CLI_CMAKE_ARGS[@]}" ..
 make -j$(nproc)
 cd "${BUILD_ROOT}"
 
 # 5. Clone & 编译 rife-ncnn-vulkan
 echo "=== Compiling rife-ncnn-vulkan ==="
 if [ ! -d "rife-ncnn-vulkan" ]; then
-    git clone --depth 1 https://github.com/nihui/rife-ncnn-vulkan.git rife-ncnn-vulkan
+    git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/nihui/rife-ncnn-vulkan.git rife-ncnn-vulkan
 fi
 mkdir -p rife-ncnn-vulkan/build && cd rife-ncnn-vulkan/build
-cmake "${COMMON_CMAKE_FLAGS[@]}" \
-    -Dncnn_DIR="${NCNN_DIR}" \
-    -DUSE_SYSTEM_NCNN=ON \
-    -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
-    ..
+cmake "${CLI_CMAKE_ARGS[@]}" ..
 make -j$(nproc)
 cd "${BUILD_ROOT}"
 
 # 6. Clone & 编译 realsr-ncnn-vulkan
 echo "=== Compiling realsr-ncnn-vulkan ==="
 if [ ! -d "realsr-ncnn-vulkan" ]; then
-    git clone --depth 1 https://github.com/nihui/realsr-ncnn-vulkan.git realsr-ncnn-vulkan
+    git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/nihui/realsr-ncnn-vulkan.git realsr-ncnn-vulkan
 fi
 mkdir -p realsr-ncnn-vulkan/build && cd realsr-ncnn-vulkan/build
-cmake "${COMMON_CMAKE_FLAGS[@]}" \
-    -Dncnn_DIR="${NCNN_DIR}" \
-    -DUSE_SYSTEM_NCNN=ON \
-    -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
-    ..
+cmake "${CLI_CMAKE_ARGS[@]}" ..
 make -j$(nproc)
 cd "${BUILD_ROOT}"
 
@@ -147,7 +147,7 @@ cp "${BUILD_ROOT}/rife-ncnn-vulkan/build/rife-ncnn-vulkan" "${JNI_LIBS_DIR}/libr
 cp "${BUILD_ROOT}/realsr-ncnn-vulkan/build/realsr-ncnn-vulkan" "${JNI_LIBS_DIR}/librealsr_ncnn.so"
 cp "${BUILD_ROOT}/rembg-ncnn/build/rembg-ncnn" "${JNI_LIBS_DIR}/librembg_ncnn.so"
 
-# 查找 llvm-strip
+# 查找 llvm-strip 剥除调试符号
 STRIP_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-strip*" | head -n 1)
 if [ -n "${STRIP_TOOL}" ]; then
     echo "Stripping binaries with ${STRIP_TOOL}..."
