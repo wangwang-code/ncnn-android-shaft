@@ -58,7 +58,7 @@ if [ ! -d "ncnn" ]; then
     git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/Tencent/ncnn.git ncnn
 fi
 
-# 3. 编译 libncnn.so (开启 NCNN_SHARED_LIB 生成动态库)
+# 3. 编译 libncnn.so (NCNN_INSTALL_SDK=OFF 规避 CMake 导出 glslang 的私有依赖限制)
 echo "=== Compiling NCNN Shared Library ==="
 mkdir -p ncnn/build
 cd ncnn/build
@@ -70,14 +70,35 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_BUILD_BENCHMARK=OFF \
     -DNCNN_BUILD_EXAMPLES=OFF \
     -DNCNN_BUILD_TOOLS=OFF \
+    -DNCNN_INSTALL_SDK=OFF \
     -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
     ..
-make -j$(nproc)
-make install
+cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
 
-NCNN_DIR="${BUILD_ROOT}/install/lib/cmake/ncnn"
-echo "Found NCNN CMake: ${NCNN_DIR}"
+# 组装纯净稳定的 ncnn CMake 导入包供下游 CLI 动态链接
+NCNN_INSTALL_DIR="${BUILD_ROOT}/install"
+mkdir -p "${NCNN_INSTALL_DIR}/lib" \
+         "${NCNN_INSTALL_DIR}/include/ncnn" \
+         "${NCNN_INSTALL_DIR}/lib/cmake/ncnn"
+
+cp "${BUILD_ROOT}/ncnn/build/src/libncnn.so" "${NCNN_INSTALL_DIR}/lib/"
+cp "${BUILD_ROOT}/ncnn/src/"*.h "${NCNN_INSTALL_DIR}/include/ncnn/"
+cp "${BUILD_ROOT}/ncnn/build/src/"*.h "${NCNN_INSTALL_DIR}/include/ncnn/"
+
+cat << 'EOF' > "${NCNN_INSTALL_DIR}/lib/cmake/ncnn/ncnnConfig.cmake"
+if(NOT TARGET ncnn)
+    add_library(ncnn SHARED IMPORTED)
+    set_target_properties(ncnn PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../lib/libncnn.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../include/ncnn;${CMAKE_CURRENT_LIST_DIR}/../../include"
+    )
+endif()
+set(ncnn_FOUND TRUE)
+EOF
+
+NCNN_DIR="${NCNN_INSTALL_DIR}/lib/cmake/ncnn"
+echo "Generated ncnn CMake Config at: ${NCNN_DIR}"
 
 CLI_CMAKE_ARGS=(
     "${COMMON_CMAKE_FLAGS[@]}"
@@ -108,7 +129,7 @@ if target in c and "TILE %d" not in c:
 '
 mkdir -p build && cd build
 cmake "${CLI_CMAKE_ARGS[@]}" ../src
-make -j$(nproc)
+cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
 
 # 5. Clone & 编译 rife-ncnn-vulkan
@@ -123,7 +144,7 @@ sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
 sed -i 's/opt.use_shader_pack8/false/g' src/warp.cpp
 mkdir -p build && cd build
 cmake "${CLI_CMAKE_ARGS[@]}" ../src
-make -j$(nproc)
+cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
 
 # 6. Clone & 编译 realsr-ncnn-vulkan
@@ -137,7 +158,7 @@ sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
 mkdir -p build && cd build
 cmake "${CLI_CMAKE_ARGS[@]}" ../src
-make -j$(nproc)
+cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
 
 # 7. 编译 rembg-ncnn
@@ -147,7 +168,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -Dncnn_DIR="${NCNN_DIR}" \
     -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
     "${WORKSPACE_DIR}/src/rembg"
-make -j$(nproc)
+cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
 
 # 8. 收集产物并 Strip
@@ -155,15 +176,7 @@ echo "=== Packaging JNI Libs ==="
 JNI_LIBS_DIR="${AAR_DIR}/jni/${ABI}"
 mkdir -p "${JNI_LIBS_DIR}"
 
-NCNN_SO=$(find "${BUILD_ROOT}/install" -name "libncnn.so*" | head -n 1)
-if [ -z "${NCNN_SO}" ]; then
-    echo "Error: libncnn.so not found in ${BUILD_ROOT}/install!"
-    find "${BUILD_ROOT}" -name "*.so"
-    exit 1
-fi
-echo "Found libncnn.so at: ${NCNN_SO}"
-cp "${NCNN_SO}" "${JNI_LIBS_DIR}/libncnn.so"
-
+cp "${NCNN_INSTALL_DIR}/lib/libncnn.so" "${JNI_LIBS_DIR}/libncnn.so"
 cp "${BUILD_ROOT}/realcugan-ncnn-vulkan/build/realcugan-ncnn-vulkan" "${JNI_LIBS_DIR}/librealcugan_ncnn.so"
 cp "${BUILD_ROOT}/rife-ncnn-vulkan/build/rife-ncnn-vulkan" "${JNI_LIBS_DIR}/librife_ncnn.so"
 cp "${BUILD_ROOT}/realsr-ncnn-vulkan/build/realsr-ncnn-vulkan" "${JNI_LIBS_DIR}/librealsr_ncnn.so"
