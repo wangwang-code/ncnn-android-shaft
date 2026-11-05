@@ -79,19 +79,23 @@ cd "${BUILD_ROOT}"
 # 组装纯净稳定的 ncnn CMake 导入包供下游 CLI 动态链接
 NCNN_INSTALL_DIR="${BUILD_ROOT}/install"
 mkdir -p "${NCNN_INSTALL_DIR}/lib" \
+         "${NCNN_INSTALL_DIR}/include" \
          "${NCNN_INSTALL_DIR}/include/ncnn" \
          "${NCNN_INSTALL_DIR}/lib/cmake/ncnn"
 
 cp "${BUILD_ROOT}/ncnn/build/src/libncnn.so" "${NCNN_INSTALL_DIR}/lib/"
 cp "${BUILD_ROOT}/ncnn/src/"*.h "${NCNN_INSTALL_DIR}/include/ncnn/"
 cp "${BUILD_ROOT}/ncnn/build/src/"*.h "${NCNN_INSTALL_DIR}/include/ncnn/"
+# 同时在 include 根目录放一份便于兼容 <ncnn/...> 和 "..." 包含风格
+cp "${BUILD_ROOT}/ncnn/src/"*.h "${NCNN_INSTALL_DIR}/include/"
+cp "${BUILD_ROOT}/ncnn/build/src/"*.h "${NCNN_INSTALL_DIR}/include/"
 
-cat << 'EOF' > "${NCNN_INSTALL_DIR}/lib/cmake/ncnn/ncnnConfig.cmake"
+cat << EOF > "${NCNN_INSTALL_DIR}/lib/cmake/ncnn/ncnnConfig.cmake"
 if(NOT TARGET ncnn)
     add_library(ncnn SHARED IMPORTED)
     set_target_properties(ncnn PROPERTIES
-        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../lib/libncnn.so"
-        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../include/ncnn;${CMAKE_CURRENT_LIST_DIR}/../../include"
+        IMPORTED_LOCATION "${NCNN_INSTALL_DIR}/lib/libncnn.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${NCNN_INSTALL_DIR}/include;${NCNN_INSTALL_DIR}/include/ncnn"
     )
 endif()
 set(ncnn_FOUND TRUE)
