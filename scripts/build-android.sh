@@ -58,14 +58,15 @@ if [ ! -d "ncnn" ]; then
     git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/Tencent/ncnn.git ncnn
 fi
 
-# 3. 编译 libncnn.so
+# 3. 编译 libncnn.so (开启 NCNN_SHARED_LIB 生成动态库)
 echo "=== Compiling NCNN Shared Library ==="
 mkdir -p ncnn/build
 cd ncnn/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
+    -DNCNN_SHARED_LIB=ON \
+    -DBUILD_SHARED_LIBS=ON \
     -DNCNN_VULKAN=ON \
     -DNCNN_OPENMP=ON \
-    -DBUILD_SHARED_LIBS=ON \
     -DNCNN_BUILD_BENCHMARK=OFF \
     -DNCNN_BUILD_EXAMPLES=OFF \
     -DNCNN_BUILD_TOOLS=OFF \
@@ -119,7 +120,6 @@ cd rife-ncnn-vulkan
 sed -i 's/set(USE_SYSTEM_NCNN OFF)/# set(USE_SYSTEM_NCNN OFF)/g' src/CMakeLists.txt
 sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
-# 适配新版 NCNN API (移除已废弃的 opt.use_shader_pack8)
 sed -i 's/opt.use_shader_pack8/false/g' src/warp.cpp
 mkdir -p build && cd build
 cmake "${CLI_CMAKE_ARGS[@]}" ../src
@@ -155,7 +155,15 @@ echo "=== Packaging JNI Libs ==="
 JNI_LIBS_DIR="${AAR_DIR}/jni/${ABI}"
 mkdir -p "${JNI_LIBS_DIR}"
 
-cp "${BUILD_ROOT}/install/lib/libncnn.so" "${JNI_LIBS_DIR}/"
+NCNN_SO=$(find "${BUILD_ROOT}/install" -name "libncnn.so*" | head -n 1)
+if [ -z "${NCNN_SO}" ]; then
+    echo "Error: libncnn.so not found in ${BUILD_ROOT}/install!"
+    find "${BUILD_ROOT}" -name "*.so"
+    exit 1
+fi
+echo "Found libncnn.so at: ${NCNN_SO}"
+cp "${NCNN_SO}" "${JNI_LIBS_DIR}/libncnn.so"
+
 cp "${BUILD_ROOT}/realcugan-ncnn-vulkan/build/realcugan-ncnn-vulkan" "${JNI_LIBS_DIR}/librealcugan_ncnn.so"
 cp "${BUILD_ROOT}/rife-ncnn-vulkan/build/rife-ncnn-vulkan" "${JNI_LIBS_DIR}/librife_ncnn.so"
 cp "${BUILD_ROOT}/realsr-ncnn-vulkan/build/realsr-ncnn-vulkan" "${JNI_LIBS_DIR}/librealsr_ncnn.so"
