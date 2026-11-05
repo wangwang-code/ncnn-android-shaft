@@ -58,7 +58,7 @@ if [ ! -d "ncnn" ]; then
     git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/Tencent/ncnn.git ncnn
 fi
 
-# 3. 编译 libncnn.so (NCNN_INSTALL_SDK=OFF 规避 CMake 导出 glslang 的私有依赖限制)
+# 3. 编译 libncnn.so (保留 RTTI 允许下游自定义 Layer 如 Warp 继承 ncnn::Layer)
 echo "=== Compiling NCNN Shared Library ==="
 mkdir -p ncnn/build
 cd ncnn/build
@@ -67,6 +67,8 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DBUILD_SHARED_LIBS=ON \
     -DNCNN_VULKAN=ON \
     -DNCNN_OPENMP=ON \
+    -DNCNN_DISABLE_RTTI=OFF \
+    -DNCNN_DISABLE_EXCEPTION=OFF \
     -DNCNN_BUILD_BENCHMARK=OFF \
     -DNCNN_BUILD_EXAMPLES=OFF \
     -DNCNN_BUILD_TOOLS=OFF \
@@ -86,7 +88,6 @@ mkdir -p "${NCNN_INSTALL_DIR}/lib" \
 cp "${BUILD_ROOT}/ncnn/build/src/libncnn.so" "${NCNN_INSTALL_DIR}/lib/"
 cp "${BUILD_ROOT}/ncnn/src/"*.h "${NCNN_INSTALL_DIR}/include/ncnn/"
 cp "${BUILD_ROOT}/ncnn/build/src/"*.h "${NCNN_INSTALL_DIR}/include/ncnn/"
-# 同时在 include 根目录放一份便于兼容 <ncnn/...> 和 "..." 包含风格
 cp "${BUILD_ROOT}/ncnn/src/"*.h "${NCNN_INSTALL_DIR}/include/"
 cp "${BUILD_ROOT}/ncnn/build/src/"*.h "${NCNN_INSTALL_DIR}/include/"
 
