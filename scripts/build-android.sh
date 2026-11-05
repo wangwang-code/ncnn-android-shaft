@@ -119,6 +119,8 @@ cd rife-ncnn-vulkan
 sed -i 's/set(USE_SYSTEM_NCNN OFF)/# set(USE_SYSTEM_NCNN OFF)/g' src/CMakeLists.txt
 sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
+# 适配新版 NCNN API (移除已废弃的 opt.use_shader_pack8)
+sed -i 's/opt.use_shader_pack8/false/g' src/warp.cpp
 mkdir -p build && cd build
 cmake "${CLI_CMAKE_ARGS[@]}" ../src
 make -j$(nproc)
