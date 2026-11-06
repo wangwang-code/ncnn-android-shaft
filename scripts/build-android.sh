@@ -212,7 +212,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_PIXEL_AFFINE=OFF \
     -DNCNN_PIXEL_DRAWING=OFF \
     -DNCNN_INT8=OFF \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp -Wl,--exclude-libs,ALL -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
     "${WORKSPACE_DIR}/external/ncnn-general"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -258,7 +258,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_PIXEL_AFFINE=OFF \
     -DNCNN_PIXEL_DRAWING=OFF \
     -DNCNN_INT8=OFF \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp -Wl,--exclude-libs,ALL -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
     "${WORKSPACE_DIR}/external/ncnn-anime"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -290,7 +290,7 @@ mkdir -p realcugan/build && cd realcugan/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-Dncnn_DIR=${INSTALL_ANIME}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -Wl,--exclude-libs,ALL" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
     "${WORKSPACE_DIR}/src/realcugan"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -303,7 +303,7 @@ mkdir -p rife/build && cd rife/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-Dncnn_DIR=${INSTALL_ANIME}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -Wl,--exclude-libs,ALL" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
     "${WORKSPACE_DIR}/src/rife"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -316,7 +316,7 @@ mkdir -p realsr/build && cd realsr/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-Dncnn_DIR=${INSTALL_GEN}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -Wl,--exclude-libs,ALL" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
     "${WORKSPACE_DIR}/src/realsr"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -328,7 +328,7 @@ echo "=== [6/6] Compiling rembg-ncnn ==="
 mkdir -p rembg-ncnn/build && cd rembg-ncnn/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -Dncnn_DIR="${INSTALL_GEN}/lib/cmake/ncnn" \
-    -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -Wl,--exclude-libs,ALL" \
+    -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
     "${WORKSPACE_DIR}/src/rembg"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
