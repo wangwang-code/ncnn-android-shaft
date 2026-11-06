@@ -133,7 +133,7 @@ int RIFE::load(const std::string& modeldir)
     opt.use_fp16_packed = vkdev ? true : false;
     opt.use_fp16_storage = vkdev ? true : false;
     opt.use_fp16_arithmetic = false;
-    opt.use_int8_storage = true;
+    opt.use_int8_storage = false;
 
     flownet.opt = opt;
     contextnet.opt = opt;
