@@ -54,17 +54,6 @@ else()
 endif()
 
 if(USE_SYSTEM_NCNN)
-        include("${GLSLANG_TARGET_DIR}/glslangTargets.cmake")
-        include("${GLSLANG_TARGET_DIR}/SPIRVTargets.cmake")
-
-        if (NOT TARGET glslang OR NOT TARGET SPIRV)
-            message(WARNING "glslang or SPIRV target not found! USE_SYSTEM_NCNN will be turned off.")
-            set(USE_SYSTEM_NCNN OFF)
-        endif()
-    endif()
-endif()
-
-if(USE_SYSTEM_NCNN)
     find_package(ncnn)
     if(NOT TARGET ncnn)
         message(WARNING "ncnn target not found! USE_SYSTEM_NCNN will be turned off.")
