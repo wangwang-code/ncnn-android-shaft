@@ -34,7 +34,37 @@ public:
 
     void load(int yi, int xi, int ti, const std::string& name, ncnn::VkMat& feat)
     {
-        feat = gpu_cache[make_key(yi, xi, ti, name)];
+        std::string key = make_key(yi, xi, ti, name);
+        auto it = gpu_cache.find(key);
+        if (it != gpu_cache.end() && !it->second.empty())
+        {
+            feat = it->second;
+            return;
+        }
+
+        std::string suffix = "-" + std::to_string(ti) + "-" + name;
+        for (const auto& kv : gpu_cache)
+        {
+            if (!kv.second.empty() && kv.first.length() >= suffix.length() &&
+                kv.first.compare(kv.first.length() - suffix.length(), suffix.length(), suffix) == 0)
+            {
+                feat = kv.second;
+                return;
+            }
+        }
+
+        std::string name_suffix = "-" + name;
+        for (const auto& kv : gpu_cache)
+        {
+            if (!kv.second.empty() && kv.first.length() >= name_suffix.length() &&
+                kv.first.compare(kv.first.length() - name_suffix.length(), name_suffix.length(), name_suffix) == 0)
+            {
+                feat = kv.second;
+                return;
+            }
+        }
+
+        feat = gpu_cache[key];
     }
 
     void save(int yi, int xi, int ti, const std::string& name, ncnn::VkMat& feat)
@@ -44,7 +74,37 @@ public:
 
     void load(int yi, int xi, int ti, const std::string& name, ncnn::Mat& feat)
     {
-        feat = cpu_cache[make_key(yi, xi, ti, name)];
+        std::string key = make_key(yi, xi, ti, name);
+        auto it = cpu_cache.find(key);
+        if (it != cpu_cache.end() && !it->second.empty())
+        {
+            feat = it->second;
+            return;
+        }
+
+        std::string suffix = "-" + std::to_string(ti) + "-" + name;
+        for (const auto& kv : cpu_cache)
+        {
+            if (!kv.second.empty() && kv.first.length() >= suffix.length() &&
+                kv.first.compare(kv.first.length() - suffix.length(), suffix.length(), suffix) == 0)
+            {
+                feat = kv.second;
+                return;
+            }
+        }
+
+        std::string name_suffix = "-" + name;
+        for (const auto& kv : cpu_cache)
+        {
+            if (!kv.second.empty() && kv.first.length() >= name_suffix.length() &&
+                kv.first.compare(kv.first.length() - name_suffix.length(), name_suffix.length(), name_suffix) == 0)
+            {
+                feat = kv.second;
+                return;
+            }
+        }
+
+        feat = cpu_cache[key];
     }
 
     void save(int yi, int xi, int ti, const std::string& name, ncnn::Mat& feat)
@@ -2663,40 +2723,25 @@ int RealCUGAN::process_se_very_rough_sync_gap(const ncnn::Mat& inimage, const st
     cmd.reset();
 
 
-    for (int yi = 0; yi + 2 < ytiles; yi += 3)
+    const int stage2_xtiles = (w + tilesize - 1) / tilesize;
+    const int stage2_ytiles = (h + tilesize - 1) / tilesize;
+
+    for (int yi = 0; yi < stage2_ytiles; yi++)
     {
-        for (int xi = 0; xi + 2 < xtiles; xi += 3)
+        for (int xi = 0; xi < stage2_xtiles; xi++)
         {
+            for (size_t i = 0; i < names.size(); i++)
             {
-                for (size_t i = 0; i < names.size(); i++)
+                if (tta_mode)
                 {
-                    if (tta_mode)
+                    for (int ti = 0; ti < 8; ti++)
                     {
-                        for (int ti = 0; ti < 8; ti++)
-                        {
-                            cache.save(yi, xi, ti, names[i], avgfeats[i]);
-                            cache.save(yi, xi + 1, ti, names[i], avgfeats[i]);
-                            cache.save(yi, xi + 2, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 1, xi, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 1, xi + 1, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 1, xi + 2, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 2, xi, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 2, xi + 1, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 2, xi + 2, ti, names[i], avgfeats[i]);
-                        }
+                        cache.save(yi, xi, ti, names[i], avgfeats[i]);
                     }
-                    else
-                    {
-                        cache.save(yi, xi, 0, names[i], avgfeats[i]);
-                        cache.save(yi, xi + 1, 0, names[i], avgfeats[i]);
-                        cache.save(yi, xi + 2, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 1, xi, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 1, xi + 1, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 1, xi + 2, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 2, xi, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 2, xi + 1, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 2, xi + 2, 0, names[i], avgfeats[i]);
-                    }
+                }
+                else
+                {
+                    cache.save(yi, xi, 0, names[i], avgfeats[i]);
                 }
             }
         }
@@ -3816,40 +3861,25 @@ int RealCUGAN::process_cpu_se_very_rough_sync_gap(const ncnn::Mat& inimage, cons
         }
     }
 
-    for (int yi = 0; yi + 2 < ytiles; yi += 3)
+    const int stage2_xtiles = (w + tilesize - 1) / tilesize;
+    const int stage2_ytiles = (h + tilesize - 1) / tilesize;
+
+    for (int yi = 0; yi < stage2_ytiles; yi++)
     {
-        for (int xi = 0; xi + 2 < xtiles; xi += 3)
+        for (int xi = 0; xi < stage2_xtiles; xi++)
         {
+            for (size_t i = 0; i < names.size(); i++)
             {
-                for (size_t i = 0; i < names.size(); i++)
+                if (tta_mode)
                 {
-                    if (tta_mode)
+                    for (int ti = 0; ti < 8; ti++)
                     {
-                        for (int ti = 0; ti < 8; ti++)
-                        {
-                            cache.save(yi, xi, ti, names[i], avgfeats[i]);
-                            cache.save(yi, xi + 1, ti, names[i], avgfeats[i]);
-                            cache.save(yi, xi + 2, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 1, xi, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 1, xi + 1, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 1, xi + 2, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 2, xi, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 2, xi + 1, ti, names[i], avgfeats[i]);
-                            cache.save(yi + 2, xi + 2, ti, names[i], avgfeats[i]);
-                        }
+                        cache.save(yi, xi, ti, names[i], avgfeats[i]);
                     }
-                    else
-                    {
-                        cache.save(yi, xi, 0, names[i], avgfeats[i]);
-                        cache.save(yi, xi + 1, 0, names[i], avgfeats[i]);
-                        cache.save(yi, xi + 2, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 1, xi, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 1, xi + 1, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 1, xi + 2, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 2, xi, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 2, xi + 1, 0, names[i], avgfeats[i]);
-                        cache.save(yi + 2, xi + 2, 0, names[i], avgfeats[i]);
-                    }
+                }
+                else
+                {
+                    cache.save(yi, xi, 0, names[i], avgfeats[i]);
                 }
             }
         }
