@@ -1,0 +1,14 @@
+{
+    global:
+        extern "C++" {
+            ncnn::*;
+        };
+        ncnn_*;
+        _ZN4ncnn*;
+        _ZNK4ncnn*;
+        _ZTIN4ncnn*;
+        _ZTSN4ncnn*;
+        _ZTVN4ncnn*;
+    local:
+        *;
+};
