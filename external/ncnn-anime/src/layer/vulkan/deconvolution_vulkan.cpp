@@ -19,6 +19,10 @@
 
 namespace ncnn {
 
+#ifndef NCNN_COOPERATIVE_MATRIX
+#define NCNN_COOPERATIVE_MATRIX 0
+#endif
+
 Deconvolution_vulkan::Deconvolution_vulkan()
 {
     support_vulkan = true;
@@ -146,7 +150,11 @@ int Deconvolution_vulkan::create_pipeline(const Option& _opt)
 
     if (opt.use_sgemm_convolution)
     {
+#if NCNN_COOPERATIVE_MATRIX
         bool use_cooperative_matrix = vkdev->info.support_cooperative_matrix_16_8_8() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 8 == 0 && num_output % 8 == 0;
+#else
+        const bool use_cooperative_matrix = false;
+#endif
 
         // src = kw-kh-inch-outch
         // dst = pa-pb-inch/pa-kw-kh-outch/pb (sgemm)
@@ -253,10 +261,12 @@ int Deconvolution_vulkan::create_pipeline(const Option& _opt)
             if (elempack == 4 && out_elempack == 8) shader_type_index = LayerShaderType::deconvolution_pack4to8_gemm;
             if (elempack == 8 && out_elempack == 4) shader_type_index = LayerShaderType::deconvolution_pack8to4_gemm;
 
+#if NCNN_COOPERATIVE_MATRIX
             if (use_cooperative_matrix)
             {
                 shader_type_index = LayerShaderType::deconvolution_pack4_gemm_cm_16_8_8;
             }
+#endif
 
             pipeline_deconvolution_gemm = new Pipeline(vkdev);
             if (use_cooperative_matrix)
@@ -505,7 +515,11 @@ int Deconvolution_vulkan::forward(const VkMat& bottom_blob, VkMat& top_blob, VkC
     VkMat top_blob_bordered;
     if (opt.use_sgemm_convolution)
     {
+#if NCNN_COOPERATIVE_MATRIX
         bool use_cooperative_matrix = vkdev->info.support_cooperative_matrix_16_8_8() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && channels * elempack % 8 == 0 && num_output % 8 == 0;
+#else
+        const bool use_cooperative_matrix = false;
+#endif
 
         const int maxk = kernel_w * kernel_h;
 

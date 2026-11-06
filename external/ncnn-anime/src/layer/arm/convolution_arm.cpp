@@ -34,10 +34,18 @@ namespace ncnn {
 #define NCNN_CONV_5X5_7X7 0
 #endif
 
+#ifndef NCNN_CONV_2X2_4X4
+#define NCNN_CONV_2X2_4X4 0
+#endif
+
 #include "convolution_1x1.h"
+#if NCNN_CONV_2X2_4X4
 #include "convolution_2x2.h"
+#endif
 #include "convolution_3x3.h"
+#if NCNN_CONV_2X2_4X4
 #include "convolution_4x4.h"
+#endif
 #if NCNN_CONV_5X5_7X7
 #include "convolution_5x5.h"
 #include "convolution_7x7.h"
@@ -872,6 +880,7 @@ int Convolution_arm::forward(const Mat& bottom_blob, Mat& top_blob, const Option
                 activation->forward_inplace(top_blob, opt);
             }
         }
+#if NCNN_CONV_2X2_4X4
         else if (kernel_w == 4 && kernel_h == 4 && dilation_w == 1 && dilation_h == 1 && stride_w == 4 && stride_h == 4)
         {
             conv4x4s4_neon(bottom_blob_bordered, top_blob, weight_data_tm, bias_data, opt);
@@ -881,6 +890,7 @@ int Convolution_arm::forward(const Mat& bottom_blob, Mat& top_blob, const Option
                 activation->forward_inplace(top_blob, opt);
             }
         }
+#endif
 #if NCNN_CONV_5X5_7X7
         else if (kernel_w == 5 && kernel_h == 5 && dilation_w == 1 && dilation_h == 1 && stride_w == 1 && stride_h == 1)
         {
