@@ -23,6 +23,10 @@ namespace ncnn {
 #define NCNN_COOPERATIVE_MATRIX 0
 #endif
 
+#ifndef NCNN_DECONV_DIRECT
+#define NCNN_DECONV_DIRECT 1
+#endif
+
 Deconvolution_vulkan::Deconvolution_vulkan()
 {
     support_vulkan = true;
@@ -325,6 +329,7 @@ int Deconvolution_vulkan::create_pipeline(const Option& _opt)
         return 0;
     }
 
+#if NCNN_DECONV_DIRECT
     Mat weight_data_transposed(weight_data.w);
     {
         float* pt = weight_data_transposed;
@@ -419,6 +424,9 @@ int Deconvolution_vulkan::create_pipeline(const Option& _opt)
     pipeline_deconvolution->create(shader_type_index, opt, specializations);
 
     return 0;
+#else
+    return -1;
+#endif
 }
 
 int Deconvolution_vulkan::destroy_pipeline(const Option& opt)
@@ -589,6 +597,7 @@ int Deconvolution_vulkan::forward(const VkMat& bottom_blob, VkMat& top_blob, VkC
     }
     else
     {
+#if NCNN_DECONV_DIRECT
         if (pad_left > 0 || pad_right > 0 || pad_top > 0 || pad_bottom > 0 || (output_w > 0 && output_h > 0))
         {
             top_blob_bordered.create(outw, outh, num_output / out_elempack, out_elemsize, out_elempack, opt.workspace_vkallocator);
@@ -619,6 +628,9 @@ int Deconvolution_vulkan::forward(const VkMat& bottom_blob, VkMat& top_blob, VkC
         constants[9].i = top_blob_bordered.cstep;
 
         cmd.record_pipeline(pipeline_deconvolution, bindings, constants, top_blob_bordered);
+#else
+        return -1;
+#endif
     }
 
     if (pad_left > 0 || pad_right > 0 || pad_top > 0 || pad_bottom > 0)
@@ -779,6 +791,7 @@ int Deconvolution_vulkan::forward(const VkImageMat& bottom_blob, VkImageMat& top
     }
     else
     {
+#if NCNN_DECONV_DIRECT
         if (pad_left > 0 || pad_right > 0 || pad_top > 0 || pad_bottom > 0 || (output_w > 0 && output_h > 0))
         {
             top_blob_bordered.create(outw, outh, num_output / out_elempack, out_elemsize, out_elempack, opt.workspace_vkallocator);
@@ -809,6 +822,9 @@ int Deconvolution_vulkan::forward(const VkImageMat& bottom_blob, VkImageMat& top
         constants[9].i = 0; //top_blob_bordered.cstep;
 
         cmd.record_pipeline(pipeline_deconvolution, bindings, constants, top_blob_bordered);
+#else
+        return -1;
+#endif
     }
 
     if (pad_left > 0 || pad_right > 0 || pad_top > 0 || pad_bottom > 0)

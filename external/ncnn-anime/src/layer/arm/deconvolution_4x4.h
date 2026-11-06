@@ -12,6 +12,11 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
+#ifndef NCNN_DECONV_4X4S1
+#define NCNN_DECONV_4X4S1 0
+#endif
+
+#if NCNN_DECONV_4X4S1
 static void deconv4x4s1_neon(const Mat& bottom_blob, Mat& top_blob, const Mat& _kernel, const Mat& _bias, const Option& opt)
 {
     int w = bottom_blob.w;
@@ -180,6 +185,7 @@ static void deconv4x4s1_neon(const Mat& bottom_blob, Mat& top_blob, const Mat& _
         }
     }
 }
+#endif // NCNN_DECONV_4X4S1
 
 static void deconv4x4s2_neon(const Mat& bottom_blob, Mat& top_blob, const Mat& _kernel, const Mat& _bias, const Option& opt)
 {
