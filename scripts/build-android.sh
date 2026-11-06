@@ -213,6 +213,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_PIXEL_AFFINE=OFF \
     -DNCNN_PIXEL_DRAWING=OFF \
     -DNCNN_INT8=OFF \
+    -DNCNN_BF16=OFF \
     -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
     "${WORKSPACE_DIR}/external/ncnn-general"
 cmake --build . -j $(nproc)
@@ -260,6 +261,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_PIXEL_AFFINE=OFF \
     -DNCNN_PIXEL_DRAWING=OFF \
     -DNCNN_INT8=OFF \
+    -DNCNN_BF16=OFF \
     -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
     "${WORKSPACE_DIR}/external/ncnn-anime"
 cmake --build . -j $(nproc)
