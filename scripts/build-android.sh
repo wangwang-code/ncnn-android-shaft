@@ -55,6 +55,7 @@ COMMON_CMAKE_FLAGS=(
     "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
     "-DCMAKE_CXX_FLAGS=-fno-rtti -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables -fvisibility=hidden -fvisibility-inlines-hidden -flto=thin"
     "-DCMAKE_C_FLAGS=-fno-unwind-tables -fno-asynchronous-unwind-tables -fvisibility=hidden -flto=thin"
+    "-DCMAKE_ASM_FLAGS=-fno-unwind-tables -fno-asynchronous-unwind-tables"
     "-DCMAKE_CXX_VISIBILITY_PRESET=hidden"
     "-DCMAKE_VISIBILITY_INLINES_HIDDEN=ON"
     "-DCMAKE_C_VISIBILITY_PRESET=hidden"
@@ -341,7 +342,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_PIXEL_DRAWING=OFF \
     -DNCNN_INT8=OFF \
     -DNCNN_BF16=OFF \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--no-eh-frame-hdr -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
     "${WORKSPACE_DIR}/external/ncnn-general"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -405,7 +406,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_PIXEL_DRAWING=OFF \
     -DNCNN_INT8=OFF \
     -DNCNN_BF16=OFF \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--no-eh-frame-hdr -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
     "${WORKSPACE_DIR}/external/ncnn-anime"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -438,7 +439,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-DUSE_WEBP=OFF" \
     "-Dncnn_DIR=${INSTALL_ANIME}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--no-eh-frame-hdr" \
     "${WORKSPACE_DIR}/src/realcugan"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -452,7 +453,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-DUSE_WEBP=OFF" \
     "-Dncnn_DIR=${INSTALL_ANIME}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--no-eh-frame-hdr" \
     "${WORKSPACE_DIR}/src/rife"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -466,7 +467,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-DUSE_WEBP=OFF" \
     "-Dncnn_DIR=${INSTALL_GEN}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--no-eh-frame-hdr" \
     "${WORKSPACE_DIR}/src/realsr"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -478,7 +479,7 @@ echo "=== [7/7] Compiling rembg-ncnn ==="
 mkdir -p rembg-ncnn/build && cd rembg-ncnn/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -Dncnn_DIR="${INSTALL_GEN}/lib/cmake/ncnn" \
-    -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
+    -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--no-eh-frame-hdr" \
     "${WORKSPACE_DIR}/src/rembg"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -511,7 +512,7 @@ cp "${BUILD_ROOT}/simpleomp/build/libomp.so" "${JNI_LIBS_DIR}/libomp.so"
 STRIP_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-strip*" | head -n 1)
 if [ -n "${STRIP_TOOL}" ]; then
     echo "Stripping binaries with ${STRIP_TOOL}..."
-    "${STRIP_TOOL}" --strip-unneeded "${JNI_LIBS_DIR}"/*.so
+    "${STRIP_TOOL}" --strip-unneeded -R .comment "${JNI_LIBS_DIR}"/*.so
 fi
 
 # ELF 动态依赖与页面对齐审计
@@ -545,7 +546,7 @@ EOF
 
 mkdir -p "${OUTPUT_DIR}"
 cd "${AAR_DIR}"
-zip -r "${OUTPUT_DIR}/ncnn-android-shaft.aar" AndroidManifest.xml jni/
+zip -9 -r "${OUTPUT_DIR}/ncnn-android-shaft.aar" AndroidManifest.xml jni/
 
 echo "=== Build Complete! ==="
 echo "Output: ${OUTPUT_DIR}/ncnn-android-shaft.aar"
