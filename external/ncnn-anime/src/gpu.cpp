@@ -22,8 +22,6 @@
 
 #include <zlib.h>
 
-#include "vulkan_activation.comp.hex.h"
-
 #include "command.h"
 #include "layer.h"
 #include "layer/vulkan/packing_vulkan.h"
