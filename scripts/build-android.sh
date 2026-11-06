@@ -179,6 +179,14 @@ if [ ! -f "${WORKSPACE_DIR}/external/ncnn-anime/glslang/CMakeLists.txt" ]; then
     ln -sfn "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-anime/glslang" 2>/dev/null || cp -r "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-anime/glslang"
 fi
 
+# 2. 链接共享 libwebp 源码至各 CLI
+for mod in realcugan rife realsr; do
+    if [ ! -f "${WORKSPACE_DIR}/src/${mod}/libwebp/CMakeLists.txt" ]; then
+        rm -rf "${WORKSPACE_DIR}/src/${mod}/libwebp"
+        ln -sfn "${WORKSPACE_DIR}/external/libwebp" "${WORKSPACE_DIR}/src/${mod}/libwebp" 2>/dev/null || cp -r "${WORKSPACE_DIR}/external/libwebp" "${WORKSPACE_DIR}/src/${mod}/libwebp"
+    fi
+done
+
 # ==============================================================================
 # 2. 构建通用 NCNN 共享库: libncnn.so (基于 external/ncnn-general)
 # ==============================================================================
