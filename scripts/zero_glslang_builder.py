@@ -131,7 +131,8 @@ def compile_single_shader(glslc, shader_path, include_dir, preamble):
         tmp_name = tmp.name
         
     spv_name = tmp_name + '.spv'
-    cmd = [glslc, f'-I{include_dir}', '--target-env=vulkan1.1', '-fshader-stage=compute', '-Os', tmp_name, '-o', spv_name]
+    # Keep debug names (OpName) and all specialization constants for ncnn runtime reflection
+    cmd = [glslc, f'-I{include_dir}', '--target-env=vulkan1.1', '-fshader-stage=compute', '-g', tmp_name, '-o', spv_name]
     res = subprocess.run(cmd, capture_output=True, text=True)
     
     spv_bytes = None

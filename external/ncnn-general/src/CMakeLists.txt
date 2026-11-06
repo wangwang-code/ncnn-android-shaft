@@ -65,6 +65,7 @@ set(NCNN_SHADER_SPV_HEX_FILES)
 
 set(__LAYER_TYPE_ENUM_INDEX 0)
 set(__LAYER_SHADER_TYPE_ENUM_INDEX 0)
+set(NCNN_SHADER_MANIFEST "")
 
 # layer implementation
 ncnn_add_layer(AbsVal)
