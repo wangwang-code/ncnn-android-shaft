@@ -22,6 +22,10 @@
 
 namespace ncnn {
 
+#ifndef NCNN_INTERP_NEAREST
+#define NCNN_INTERP_NEAREST 0
+#endif
+
 #include "interp_bicubic.h"
 #include "interp_bilinear.h"
 
@@ -97,7 +101,8 @@ int Interp_arm::forward_fp16s(const std::vector<Mat>& bottom_blobs, std::vector<
 
         if (elempack == 4)
         {
-            if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
             {
                 const float ws = output_width ? w / (float)outw : 1.f / width_scale;
 
@@ -117,6 +122,7 @@ int Interp_arm::forward_fp16s(const std::vector<Mat>& bottom_blobs, std::vector<
                     }
                 }
             }
+#endif
 
             if (resize_type == 2) // bilinear
             {
@@ -199,7 +205,8 @@ int Interp_arm::forward_fp16s(const std::vector<Mat>& bottom_blobs, std::vector<
             return 0;
         }
 
-        if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
         {
             const float ws = output_width ? w / (float)outw : 1.f / width_scale;
 
@@ -215,6 +222,7 @@ int Interp_arm::forward_fp16s(const std::vector<Mat>& bottom_blobs, std::vector<
                 }
             }
         }
+#endif
 
         if (resize_type == 2) // bilinear
         {
@@ -293,7 +301,8 @@ int Interp_arm::forward_fp16s(const std::vector<Mat>& bottom_blobs, std::vector<
 
     if (elempack == 4)
     {
-        if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
         {
             const float hs = output_height ? h / (float)outh : 1.f / height_scale;
             const float ws = output_width ? w / (float)outw : 1.f / width_scale;
@@ -322,6 +331,7 @@ int Interp_arm::forward_fp16s(const std::vector<Mat>& bottom_blobs, std::vector<
                 }
             }
         }
+#endif
 
         if (resize_type == 2) // bilinear
         {
@@ -376,7 +386,8 @@ int Interp_arm::forward_fp16s(const std::vector<Mat>& bottom_blobs, std::vector<
         return 0;
     }
 
-    if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
     {
         const float hs = output_height ? h / (float)outh : 1.f / height_scale;
         const float ws = output_width ? w / (float)outw : 1.f / width_scale;
@@ -401,6 +412,7 @@ int Interp_arm::forward_fp16s(const std::vector<Mat>& bottom_blobs, std::vector<
             }
         }
     }
+#endif
 
     if (resize_type == 2) // bilinear
     {
@@ -471,7 +483,11 @@ int Interp_arm::forward_fp16sa(const std::vector<Mat>& bottom_blobs, std::vector
     int outw = reference_blob.w;
     int outh = reference_blob.h;
 
+#if NCNN_INTERP_NEAREST
     if ((elempack == 1 || elempack == 4) && (dims == 1 || resize_type == 1)) // nearest
+#else
+    if ((elempack == 1 || elempack == 4) && dims == 1)
+#endif
     {
         return forward_fp16s(bottom_blobs, top_blobs, opt);
     }
@@ -512,7 +528,8 @@ int Interp_arm::forward_fp16sa(const std::vector<Mat>& bottom_blobs, std::vector
 
         if (elempack == 8)
         {
-            if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
             {
                 const float ws = output_width ? w / (float)outw : 1.f / width_scale;
 
@@ -532,6 +549,7 @@ int Interp_arm::forward_fp16sa(const std::vector<Mat>& bottom_blobs, std::vector
                     }
                 }
             }
+#endif
 
             if (resize_type == 2) // bilinear
             {
@@ -774,7 +792,8 @@ int Interp_arm::forward_fp16sa(const std::vector<Mat>& bottom_blobs, std::vector
 
     if (elempack == 8)
     {
-        if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
         {
             const float hs = output_height ? h / (float)outh : 1.f / height_scale;
             const float ws = output_width ? w / (float)outw : 1.f / width_scale;
@@ -803,6 +822,7 @@ int Interp_arm::forward_fp16sa(const std::vector<Mat>& bottom_blobs, std::vector
                 }
             }
         }
+#endif
 
         if (resize_type == 2) // bilinear
         {

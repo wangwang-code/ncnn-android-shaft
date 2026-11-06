@@ -25,6 +25,10 @@
 
 namespace ncnn {
 
+#ifndef NCNN_INTERP_NEAREST
+#define NCNN_INTERP_NEAREST 0
+#endif
+
 #include "interp_bicubic.h"
 #include "interp_bilinear.h"
 
@@ -136,7 +140,8 @@ int Interp_arm::forward(const std::vector<Mat>& bottom_blobs, std::vector<Mat>& 
 #if __ARM_NEON
         if (elempack == 4)
         {
-            if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
             {
                 const float ws = output_width ? w / (float)outw : 1.f / width_scale;
 
@@ -156,6 +161,7 @@ int Interp_arm::forward(const std::vector<Mat>& bottom_blobs, std::vector<Mat>& 
                     }
                 }
             }
+#endif
 
             if (resize_type == 2) // bilinear
             {
@@ -239,7 +245,8 @@ int Interp_arm::forward(const std::vector<Mat>& bottom_blobs, std::vector<Mat>& 
         }
 #endif // __ARM_NEON
 
-        if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
         {
             const float ws = output_width ? w / (float)outw : 1.f / width_scale;
 
@@ -255,6 +262,7 @@ int Interp_arm::forward(const std::vector<Mat>& bottom_blobs, std::vector<Mat>& 
                 }
             }
         }
+#endif
 
         if (resize_type == 2) // bilinear
         {
@@ -334,7 +342,8 @@ int Interp_arm::forward(const std::vector<Mat>& bottom_blobs, std::vector<Mat>& 
 #if __ARM_NEON
     if (elempack == 4)
     {
-        if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
         {
             const float hs = output_height ? h / (float)outh : 1.f / height_scale;
             const float ws = output_width ? w / (float)outw : 1.f / width_scale;
@@ -363,6 +372,7 @@ int Interp_arm::forward(const std::vector<Mat>& bottom_blobs, std::vector<Mat>& 
                 }
             }
         }
+#endif
 
         if (resize_type == 2) // bilinear
         {
@@ -418,7 +428,8 @@ int Interp_arm::forward(const std::vector<Mat>& bottom_blobs, std::vector<Mat>& 
     }
 #endif // __ARM_NEON
 
-    if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
     {
         const float hs = output_height ? h / (float)outh : 1.f / height_scale;
         const float ws = output_width ? w / (float)outw : 1.f / width_scale;
@@ -443,6 +454,7 @@ int Interp_arm::forward(const std::vector<Mat>& bottom_blobs, std::vector<Mat>& 
             }
         }
     }
+#endif
 
     if (resize_type == 2) // bilinear
     {
@@ -561,7 +573,8 @@ int Interp_arm::forward_bf16s(const std::vector<Mat>& bottom_blobs, std::vector<
 #if __ARM_NEON
         if (elempack == 4)
         {
-            if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
             {
                 const float ws = output_width ? w / (float)outw : 1.f / width_scale;
 
@@ -581,6 +594,7 @@ int Interp_arm::forward_bf16s(const std::vector<Mat>& bottom_blobs, std::vector<
                     }
                 }
             }
+#endif
 
             if (resize_type == 2) // bilinear
             {
@@ -664,7 +678,8 @@ int Interp_arm::forward_bf16s(const std::vector<Mat>& bottom_blobs, std::vector<
         }
 #endif // __ARM_NEON
 
-        if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
         {
             const float ws = output_width ? w / (float)outw : 1.f / width_scale;
 
@@ -680,6 +695,7 @@ int Interp_arm::forward_bf16s(const std::vector<Mat>& bottom_blobs, std::vector<
                 }
             }
         }
+#endif
 
         if (resize_type == 2) // bilinear
         {
@@ -759,7 +775,8 @@ int Interp_arm::forward_bf16s(const std::vector<Mat>& bottom_blobs, std::vector<
 #if __ARM_NEON
     if (elempack == 4)
     {
-        if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
         {
             const float hs = output_height ? h / (float)outh : 1.f / height_scale;
             const float ws = output_width ? w / (float)outw : 1.f / width_scale;
@@ -788,6 +805,7 @@ int Interp_arm::forward_bf16s(const std::vector<Mat>& bottom_blobs, std::vector<
                 }
             }
         }
+#endif
 
         if (resize_type == 2) // bilinear
         {
@@ -843,7 +861,8 @@ int Interp_arm::forward_bf16s(const std::vector<Mat>& bottom_blobs, std::vector<
     }
 #endif // __ARM_NEON
 
-    if (resize_type == 1) // nearest
+#if NCNN_INTERP_NEAREST
+if (resize_type == 1) // nearest
     {
         const float hs = output_height ? h / (float)outh : 1.f / height_scale;
         const float ws = output_width ? w / (float)outw : 1.f / width_scale;
@@ -868,6 +887,7 @@ int Interp_arm::forward_bf16s(const std::vector<Mat>& bottom_blobs, std::vector<
             }
         }
     }
+#endif
 
     if (resize_type == 2) // bilinear
     {
