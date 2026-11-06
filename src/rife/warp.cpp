@@ -4,7 +4,9 @@
 
 #include "warp.comp.hex.h"
 #include "warp_pack4.comp.hex.h"
+#if 0
 #include "warp_pack8.comp.hex.h"
+#endif
 
 using namespace ncnn;
 
@@ -59,6 +61,7 @@ int Warp::create_pipeline(const Option& opt)
     }
 
     // pack8
+#if 0
     if (opt.use_shader_pack8)
     {
         static std::vector<uint32_t> spirv;
@@ -75,6 +78,7 @@ int Warp::create_pipeline(const Option& opt)
         pipeline_warp_pack8->set_optimal_local_size_xyz();
         pipeline_warp_pack8->create(spirv.data(), spirv.size() * 4, specializations);
     }
+#endif
 
     return 0;
 }

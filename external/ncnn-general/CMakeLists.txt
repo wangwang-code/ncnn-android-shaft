@@ -92,6 +92,7 @@ option(NCNN_FORCE_INLINE "force inline some function" ON)
 option(NCNN_COOPERATIVE_MATRIX "enable cooperative matrix" ON)
 option(NCNN_POOLING_GLOBAL "enable global pooling shaders" ON)
 option(NCNN_POOLING_ADAPTIVE "enable adaptive pooling shaders" ON)
+option(NCNN_VULKAN_PACK8 "enable vulkan compute shader pack8 support" OFF)
 
 if(ANDROID OR IOS OR NCNN_SIMPLESTL)
     option(NCNN_DISABLE_RTTI "disable rtti" ON)

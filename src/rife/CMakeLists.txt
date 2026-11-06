@@ -233,7 +233,7 @@ rife_add_shader(rife_v4_timestep.comp)
 rife_add_shader(rife_v4_timestep_tta.comp)
 rife_add_shader(warp.comp)
 rife_add_shader(warp_pack4.comp)
-rife_add_shader(warp_pack8.comp)
+# rife_add_shader(warp_pack8.comp)
 
 add_custom_target(generate-spirv DEPENDS ${SHADER_SPV_HEX_FILES})
 

@@ -3809,6 +3809,12 @@ int compile_spirv_module(int shader_type_index, const Option& opt, std::vector<u
     const char* comp_data = layer_shader_registry[shader_type_index].comp_data;
     int comp_data_size = layer_shader_registry[shader_type_index].comp_data_size;
 
+    if (!comp_data || comp_data_size <= 0)
+    {
+        NCNN_LOGE("shader module %d is stripped", shader_type_index);
+        return -1;
+    }
+
     return compile_spirv_module(comp_data, comp_data_size, opt, spirv);
 }
 
