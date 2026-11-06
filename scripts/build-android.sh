@@ -183,6 +183,7 @@ sed -i 's/set(USE_SYSTEM_NCNN OFF)/# set(USE_SYSTEM_NCNN OFF)/g' src/CMakeLists.
 sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
 sed -i 's/\${OpenMP_CXX_LIBRARIES}/-static-openmp/g' src/CMakeLists.txt
+sed -i 's/set(REALCUGAN_LINK_LIBRARIES ncnn/set(REALCUGAN_LINK_LIBRARIES ncnn -static-openmp/g' src/CMakeLists.txt
 
 # 注入精准安全的 TILE %d 单调递增行级进度（对齐 4.9.9 旧版二进制行为，消除高频 I/O 卡慢与超界溢出），并禁用 int8_storage 确保走标准 from_pixels/to_pixels 规范化管线（修复伪彩色/负片异常）
 python3 -c '
@@ -296,7 +297,7 @@ mkdir -p build && cd build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-Dncnn_DIR=${INSTALL_ANIME}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
     ../src
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -314,13 +315,14 @@ sed -i 's/set(USE_SYSTEM_NCNN OFF)/# set(USE_SYSTEM_NCNN OFF)/g' src/CMakeLists.
 sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
 sed -i 's/\${OpenMP_CXX_LIBRARIES}/-static-openmp/g' src/CMakeLists.txt
+sed -i 's/set(RIFE_LINK_LIBRARIES ncnn/set(RIFE_LINK_LIBRARIES ncnn -static-openmp/g' src/CMakeLists.txt
 # 注意：严禁修改 opt.use_shader_pack8！libncnn_anime 原生支持 pack8，杜绝补帧拉丝花屏！
 
 mkdir -p build && cd build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-Dncnn_DIR=${INSTALL_ANIME}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
     ../src
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -353,7 +355,7 @@ mkdir -p build && cd build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-Dncnn_DIR=${INSTALL_GEN}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN" \
     ../src
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -390,11 +392,17 @@ cp "${BUILD_ROOT}/rife-ncnn-vulkan/build/rife-ncnn-vulkan" "${JNI_LIBS_DIR}/libr
 cp "${BUILD_ROOT}/realsr-ncnn-vulkan/build/realsr-ncnn-vulkan" "${JNI_LIBS_DIR}/librealsr_ncnn.so"
 cp "${BUILD_ROOT}/rembg-ncnn/build/rembg-ncnn" "${JNI_LIBS_DIR}/librembg_ncnn.so"
 
-# 打包官方 NDK 标准 libomp.so 作为双保险兜底
-NDK_OMP=$(find "${ANDROID_NDK_ROOT}" -name "libomp.so" | grep -E "aarch64|arm64" | head -n 1)
-if [ -n "${NDK_OMP}" ]; then
-    echo "Bundling NDK libomp.so: ${NDK_OMP}"
-    cp "${NDK_OMP}" "${JNI_LIBS_DIR}/libomp.so"
+# 彻底移除动态 libomp.so（libncnn 与 libncnn_anime 已内联完整运行时，各 CLI 静态链接 OpenMP 桩，无外部 libomp 依赖）
+READELF_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-readelf*" | head -n 1)
+if [ -n "${READELF_TOOL}" ]; then
+    echo "Running ELF dynamic dependency audit..."
+    for so in "${JNI_LIBS_DIR}"/*.so; do
+        if "${READELF_TOOL}" -d "${so}" 2>/dev/null | grep -q "libomp.so"; then
+            echo "ERROR: $(basename "${so}") still has DT_NEEDED on libomp.so!"
+            exit 1
+        fi
+    done
+    echo "Audit passed: No .so depends on libomp.so!"
 fi
 
 READELF_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-readelf*" | head -n 1)
