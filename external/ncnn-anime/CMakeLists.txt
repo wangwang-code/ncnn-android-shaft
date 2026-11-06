@@ -88,6 +88,7 @@ option(NCNN_FORCE_INLINE "force inline some function" ON)
 option(NCNN_COOPERATIVE_MATRIX "enable cooperative matrix" ON)
 option(NCNN_DECONV_DIRECT "enable direct deconvolution shaders" ON)
 option(NCNN_DECONV_4X4S1 "enable neon 4x4 stride 1 deconvolution" ON)
+option(NCNN_POOLING_ADAPTIVE "enable adaptive pooling shaders" ON)
 
 if(ANDROID OR IOS OR NCNN_SIMPLESTL OR CMAKE_CROSSCOMPILING)
     option(NCNN_DISABLE_RTTI "disable rtti" ON)

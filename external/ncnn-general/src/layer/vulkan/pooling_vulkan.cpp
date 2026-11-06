@@ -25,6 +25,10 @@ namespace ncnn {
 #define NCNN_POOLING_GLOBAL 1
 #endif
 
+#ifndef NCNN_POOLING_ADAPTIVE
+#define NCNN_POOLING_ADAPTIVE 1
+#endif
+
 Pooling_vulkan::Pooling_vulkan()
 {
     support_vulkan = true;
@@ -300,6 +304,7 @@ int Pooling_vulkan::create_pipeline(const Option& _opt)
     }
     else if (adaptive_pooling)
     {
+#if NCNN_POOLING_ADAPTIVE
         std::vector<vk_specialization_type> specializations(1 + 10);
         specializations[0].i = pooling_type;
         specializations[1 + 0].i = shape_bordered_packed.dims;
@@ -344,6 +349,10 @@ int Pooling_vulkan::create_pipeline(const Option& _opt)
             pipeline_pooling_adaptive_pack8->set_optimal_local_size_xyz(local_size_xyz);
             pipeline_pooling_adaptive_pack8->create(LayerShaderType::pooling_adaptive_pack8, opt, specializations);
         }
+
+#else
+        return -1;
+#endif
     }
     else
     {
@@ -428,6 +437,7 @@ int Pooling_vulkan::destroy_pipeline(const Option& _opt)
     delete pipeline_pooling_pack8;
     pipeline_pooling_pack8 = 0;
 
+#if NCNN_POOLING_ADAPTIVE
     delete pipeline_pooling_adaptive;
     pipeline_pooling_adaptive = 0;
 
@@ -436,6 +446,7 @@ int Pooling_vulkan::destroy_pipeline(const Option& _opt)
 
     delete pipeline_pooling_adaptive_pack8;
     pipeline_pooling_adaptive_pack8 = 0;
+#endif
 
 #if NCNN_POOLING_GLOBAL
     delete pipeline_pooling_global_reduce_first;
@@ -595,6 +606,7 @@ int Pooling_vulkan::forward(const VkMat& bottom_blob, VkMat& top_blob, VkCompute
 
     if (adaptive_pooling)
     {
+#if NCNN_POOLING_ADAPTIVE
         int _out_w = out_w == -233 ? w : out_w;
         int _out_h = out_h == -233 ? h : out_h;
 
@@ -631,6 +643,10 @@ int Pooling_vulkan::forward(const VkMat& bottom_blob, VkMat& top_blob, VkCompute
         cmd.record_pipeline(pipeline, bindings, constants, top_blob);
 
         return 0;
+
+#else
+        return -1;
+#endif
     }
 
     VkMat bottom_blob_bordered = bottom_blob;
@@ -886,6 +902,7 @@ int Pooling_vulkan::forward(const VkImageMat& bottom_blob, VkImageMat& top_blob,
 
     if (adaptive_pooling)
     {
+#if NCNN_POOLING_ADAPTIVE
         int _out_w = out_w == -233 ? w : out_w;
         int _out_h = out_h == -233 ? h : out_h;
 
@@ -922,6 +939,10 @@ int Pooling_vulkan::forward(const VkImageMat& bottom_blob, VkImageMat& top_blob,
         cmd.record_pipeline(pipeline, bindings, constants, top_blob);
 
         return 0;
+
+#else
+        return -1;
+#endif
     }
 
     VkImageMat bottom_blob_bordered = bottom_blob;

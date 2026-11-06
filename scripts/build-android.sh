@@ -97,7 +97,7 @@ PRUNED_LAYER_FLAGS_ANIME=(
     -DWITH_LAYER_mvn=OFF
     -DWITH_LAYER_pooling=ON
     -DWITH_LAYER_power=OFF
-    -DWITH_LAYER_prelu=ON
+    -DWITH_LAYER_prelu=OFF
     -DWITH_LAYER_proposal=OFF
     -DWITH_LAYER_reduction=OFF
     -DWITH_LAYER_relu=ON
@@ -105,7 +105,7 @@ PRUNED_LAYER_FLAGS_ANIME=(
     -DWITH_LAYER_roipooling=OFF
     -DWITH_LAYER_scale=OFF
     -DWITH_LAYER_sigmoid=ON
-    -DWITH_LAYER_slice=ON
+    -DWITH_LAYER_slice=OFF
     -DWITH_LAYER_softmax=OFF
     -DWITH_LAYER_split=ON
     -DWITH_LAYER_spp=OFF
@@ -294,13 +294,6 @@ if [ ! -f "${WORKSPACE_DIR}/external/ncnn-anime/glslang/CMakeLists.txt" ]; then
     ln -sfn "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-anime/glslang" 2>/dev/null || cp -r "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-anime/glslang"
 fi
 
-# 2. 链接共享 libwebp 源码至各 CLI
-for mod in realcugan rife realsr; do
-    if [ ! -f "${WORKSPACE_DIR}/src/${mod}/libwebp/CMakeLists.txt" ]; then
-        rm -rf "${WORKSPACE_DIR}/src/${mod}/libwebp"
-        ln -sfn "${WORKSPACE_DIR}/external/libwebp" "${WORKSPACE_DIR}/src/${mod}/libwebp" 2>/dev/null || cp -r "${WORKSPACE_DIR}/external/libwebp" "${WORKSPACE_DIR}/src/${mod}/libwebp"
-    fi
-done
 
 # 3. 编译极简微型 OpenMP 共享库: libomp.so (基于 Tencent simpleomp)
 echo "=== [1/7] Compiling Minimal libomp.so (simpleomp) ==="
@@ -324,6 +317,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_CONV_2X2_4X4=0 \
     -DNCNN_COOPERATIVE_MATRIX=OFF \
     -DNCNN_POOLING_GLOBAL=OFF \
+    -DNCNN_POOLING_ADAPTIVE=OFF \
     -DNCNN_C_API=OFF \
     -DNCNN_ARM82DOT=OFF \
     -DNCNN_ARM82FP16FML=OFF \
@@ -386,6 +380,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_COOPERATIVE_MATRIX=OFF \
     -DNCNN_DECONV_DIRECT=OFF \
     -DNCNN_DECONV_4X4S1=OFF \
+    -DNCNN_POOLING_ADAPTIVE=OFF \
     -DNCNN_C_API=OFF \
     -DNCNN_ARM82DOT=OFF \
     -DNCNN_ARM82FP16FML=OFF \
