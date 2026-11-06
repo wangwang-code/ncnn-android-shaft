@@ -51,6 +51,105 @@ COMMON_CMAKE_FLAGS=(
     "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 )
 
+# 精准裁剪算子（针对 Pixiv-Shaft 全量模型: Real-CUGAN, Real-ESRGAN, RIFE, rembg）
+# 禁用 70+ 个无用重型算子 (3D卷积/RNN/LSTM/Transformer多头注意力/YOLO检测/量化等)，包体断崖式缩减
+PRUNED_LAYER_FLAGS=(
+    -DWITH_LAYER_absval=OFF
+    -DWITH_LAYER_argmax=OFF
+    -DWITH_LAYER_batchnorm=OFF
+    -DWITH_LAYER_bias=OFF
+    -DWITH_LAYER_bnll=OFF
+    -DWITH_LAYER_concat=ON
+    -DWITH_LAYER_convolution=ON
+    -DWITH_LAYER_crop=ON
+    -DWITH_LAYER_deconvolution=ON
+    -DWITH_LAYER_dropout=OFF
+    -DWITH_LAYER_eltwise=ON
+    -DWITH_LAYER_elu=OFF
+    -DWITH_LAYER_embed=OFF
+    -DWITH_LAYER_exp=OFF
+    -DWITH_LAYER_flatten=ON
+    -DWITH_LAYER_innerproduct=ON
+    -DWITH_LAYER_input=ON
+    -DWITH_LAYER_log=OFF
+    -DWITH_LAYER_lrn=OFF
+    -DWITH_LAYER_memorydata=ON
+    -DWITH_LAYER_mvn=OFF
+    -DWITH_LAYER_pooling=ON
+    -DWITH_LAYER_power=OFF
+    -DWITH_LAYER_prelu=ON
+    -DWITH_LAYER_proposal=OFF
+    -DWITH_LAYER_reduction=ON
+    -DWITH_LAYER_relu=ON
+    -DWITH_LAYER_reshape=ON
+    -DWITH_LAYER_roipooling=OFF
+    -DWITH_LAYER_scale=ON
+    -DWITH_LAYER_sigmoid=ON
+    -DWITH_LAYER_slice=ON
+    -DWITH_LAYER_softmax=OFF
+    -DWITH_LAYER_split=ON
+    -DWITH_LAYER_spp=OFF
+    -DWITH_LAYER_tanh=OFF
+    -DWITH_LAYER_threshold=OFF
+    -DWITH_LAYER_tile=OFF
+    -DWITH_LAYER_rnn=OFF
+    -DWITH_LAYER_lstm=OFF
+    -DWITH_LAYER_binaryop=ON
+    -DWITH_LAYER_unaryop=ON
+    -DWITH_LAYER_convolutiondepthwise=OFF
+    -DWITH_LAYER_padding=ON
+    -DWITH_LAYER_squeeze=OFF
+    -DWITH_LAYER_expanddims=OFF
+    -DWITH_LAYER_normalize=OFF
+    -DWITH_LAYER_permute=OFF
+    -DWITH_LAYER_priorbox=OFF
+    -DWITH_LAYER_detectionoutput=OFF
+    -DWITH_LAYER_interp=ON
+    -DWITH_LAYER_deconvolutiondepthwise=OFF
+    -DWITH_LAYER_shufflechannel=OFF
+    -DWITH_LAYER_instancenorm=OFF
+    -DWITH_LAYER_clip=ON
+    -DWITH_LAYER_reorg=OFF
+    -DWITH_LAYER_yolodetectionoutput=OFF
+    -DWITH_LAYER_quantize=OFF
+    -DWITH_LAYER_dequantize=OFF
+    -DWITH_LAYER_yolov3detectionoutput=OFF
+    -DWITH_LAYER_psroipooling=OFF
+    -DWITH_LAYER_roialign=OFF
+    -DWITH_LAYER_packing=ON
+    -DWITH_LAYER_requantize=OFF
+    -DWITH_LAYER_cast=ON
+    -DWITH_LAYER_hardsigmoid=OFF
+    -DWITH_LAYER_selu=OFF
+    -DWITH_LAYER_hardswish=OFF
+    -DWITH_LAYER_noop=ON
+    -DWITH_LAYER_pixelshuffle=ON
+    -DWITH_LAYER_deepcopy=ON
+    -DWITH_LAYER_mish=OFF
+    -DWITH_LAYER_statisticspooling=OFF
+    -DWITH_LAYER_swish=OFF
+    -DWITH_LAYER_gemm=OFF
+    -DWITH_LAYER_groupnorm=OFF
+    -DWITH_LAYER_layernorm=OFF
+    -DWITH_LAYER_softplus=OFF
+    -DWITH_LAYER_gru=OFF
+    -DWITH_LAYER_multiheadattention=OFF
+    -DWITH_LAYER_gelu=OFF
+    -DWITH_LAYER_convolution1d=OFF
+    -DWITH_LAYER_pooling1d=OFF
+    -DWITH_LAYER_convolutiondepthwise1d=OFF
+    -DWITH_LAYER_convolution3d=OFF
+    -DWITH_LAYER_convolutiondepthwise3d=OFF
+    -DWITH_LAYER_pooling3d=OFF
+    -DWITH_LAYER_matmul=OFF
+    -DWITH_LAYER_deconvolution1d=OFF
+    -DWITH_LAYER_deconvolutiondepthwise1d=OFF
+    -DWITH_LAYER_deconvolution3d=OFF
+    -DWITH_LAYER_deconvolutiondepthwise3d=OFF
+    -DWITH_LAYER_einsum=OFF
+    -DWITH_LAYER_deformableconv2d=OFF
+)
+
 mkdir -p "${BUILD_ROOT}"
 cd "${BUILD_ROOT}"
 
@@ -76,6 +175,7 @@ fi
 
 mkdir -p ncnn-general/build && cd ncnn-general/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
+    "${PRUNED_LAYER_FLAGS[@]}" \
     -DNCNN_SHARED_LIB=ON \
     -DNCNN_VULKAN=ON \
     -DNCNN_OPENMP=ON \
@@ -135,9 +235,10 @@ fi
 
 mkdir -p build && cd build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
+    "${PRUNED_LAYER_FLAGS[@]}" \
     -DNCNN_SHARED_LIB=ON \
     -DNCNN_VULKAN=ON \
-    -DNCNN_VULKAN_ONLINE_SPIRV=ON \
+    -DNCNN_VULKAN_ONLINE_SPIRV=OFF \
     -DNCNN_OPENMP=ON \
     -DNCNN_DISABLE_RTTI=OFF \
     -DNCNN_DISABLE_EXCEPTION=OFF \
