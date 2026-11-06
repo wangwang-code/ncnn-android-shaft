@@ -9,6 +9,18 @@
         _ZTIN4ncnn*;
         _ZTSN4ncnn*;
         _ZTVN4ncnn*;
+        omp_*;
+        __kmpc_*;
+        _ZNSt6__ndk112basic_string*;
+        _ZNKSt6__ndk112basic_string*;
+        _ZNSt6__ndk19to_string*;
+        _ZNSt6__ndk1pl*;
+        _ZNSt6__ndk122__libcpp_verbose_abort*;
+        _Znwm*;
+        _ZdlPv*;
+        _Znam*;
+        _ZdaPv*;
+        __emutls_get_address;
     local:
         *;
 };
