@@ -117,7 +117,7 @@ def compile_single_shader(glslc, shader_path, include_dir, preamble):
         content = f.read()
     v_idx = content.find('#version 450')
     if v_idx == -1:
-        print(f"Error: No '#version 450' in {shader_path}", file=sys.stderr)
+        # Non-standalone shader include file (e.g. vulkan_activation.comp header)
         return None
         
     actual_preamble = preamble
@@ -174,6 +174,10 @@ def process_manifest(manifest_path, target_type, glslc, output_dir, include_dir)
             return idx, None
         spv = compile_single_shader(glslc, p, include_dir, preamble)
         if spv is None:
+            # Check if this file is a header without #version 450 (e.g. vulkan_activation.comp)
+            with open(p, 'r', encoding='utf-8') as f:
+                if '#version 450' not in f.read():
+                    return idx, None
             raise RuntimeError(f"Failed to compile shader at index {idx}: {p}")
         return idx, spv
 
