@@ -27,7 +27,13 @@
 
 namespace ncnn {
 
+#ifndef NCNN_DECONV_3X3
+#define NCNN_DECONV_3X3 0
+#endif
+
+#if NCNN_DECONV_3X3
 #include "deconvolution_3x3.h"
+#endif
 #include "deconvolution_4x4.h"
 
 Deconvolution_arm::Deconvolution_arm()
@@ -615,6 +621,7 @@ int Deconvolution_arm::forward(const Mat& bottom_blob, Mat& top_blob, const Opti
 
     if (elempack == 1 && out_elempack == 1)
     {
+#if NCNN_DECONV_3X3
         if (kernel_w == 3 && kernel_h == 3 && stride_w == 1 && stride_h == 1 && dilation_w == 1 && dilation_h == 1)
         {
             deconv3x3s1_neon(bottom_blob, top_blob_bordered, weight_data_tm, bias_data, opt);
@@ -633,7 +640,9 @@ int Deconvolution_arm::forward(const Mat& bottom_blob, Mat& top_blob, const Opti
                 activation->forward_inplace(top_blob_bordered, opt);
             }
         }
-        else if (kernel_w == 4 && kernel_h == 4 && stride_w == 1 && stride_h == 1 && dilation_w == 1 && dilation_h == 1)
+        else
+#endif
+        if (kernel_w == 4 && kernel_h == 4 && stride_w == 1 && stride_h == 1 && dilation_w == 1 && dilation_h == 1)
         {
             deconv4x4s1_neon(bottom_blob, top_blob_bordered, weight_data_tm, bias_data, opt);
 
