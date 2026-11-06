@@ -119,7 +119,12 @@ def compile_single_shader(glslc, shader_path, include_dir, preamble):
     if v_idx == -1:
         print(f"Error: No '#version 450' in {shader_path}", file=sys.stderr)
         return None
-    new_content = content[:v_idx+12] + '\n' + preamble + '\n' + content[v_idx+12:]
+        
+    actual_preamble = preamble
+    if 'struct sfpvec8' in content:
+        actual_preamble = actual_preamble.replace('struct sfpvec8 { f16vec4 abcd; f16vec4 efgh; };', '')
+
+    new_content = content[:v_idx+12] + '\n' + actual_preamble + '\n' + content[v_idx+12:]
     
     with tempfile.NamedTemporaryFile(suffix='.comp', mode='w', delete=False, encoding='utf-8') as tmp:
         tmp.write(new_content)
