@@ -13,7 +13,4 @@ target_link_libraries(rembg-ncnn PRIVATE ncnn)
 
 if(ANDROID)
     target_link_libraries(rembg-ncnn PRIVATE log)
-    set_target_properties(rembg-ncnn PROPERTIES
-        LINK_FLAGS "-Wl,-z,max-page-size=16384"
-    )
 endif()
