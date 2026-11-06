@@ -2324,7 +2324,7 @@ int create_gpu_instance(const char* driver_path)
     // the default gpu device
     g_default_gpu_index = find_default_vulkan_device_index();
 
-    g_instance.glslang_initialized = // Zero-Glslang
+    g_instance.glslang_initialized = true;
 
     // the global __ncnn_vulkan_instance_holder destructor will call destroy_gpu_instance() on exit
     // but it seems to be too late for nvidia driver :(
