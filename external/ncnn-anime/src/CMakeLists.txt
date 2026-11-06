@@ -166,6 +166,30 @@ if(NCNN_VULKAN)
     ncnn_add_shader(${CMAKE_CURRENT_SOURCE_DIR}/layer/vulkan/shader/vulkan_activation.comp)
 endif()
 
+if(NCNN_ZERO_GLSLANG)
+    if(NOT GLSLC_EXECUTABLE)
+        find_program(GLSLC_EXECUTABLE glslc HINTS "${ANDROID_NDK}/shader-tools/linux-x86_64" "${ANDROID_NDK}/shader-tools/windows-x86_64" "${ANDROID_NDK}/shader-tools/darwin-x86_64")
+        if(NOT GLSLC_EXECUTABLE)
+            set(GLSLC_EXECUTABLE "glslc")
+        endif()
+    endif()
+
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/shader_manifest.txt" "${NCNN_SHADER_MANIFEST}")
+
+    execute_process(
+        COMMAND python3 "${CMAKE_CURRENT_SOURCE_DIR}/../../../scripts/zero_glslang_builder.py"
+                --manifest "${CMAKE_CURRENT_BINARY_DIR}/shader_manifest.txt"
+                --output-dir "${CMAKE_CURRENT_BINARY_DIR}"
+                --include-dir "${CMAKE_CURRENT_SOURCE_DIR}/layer/vulkan/shader"
+                --target-type "${NCNN_TARGET_TYPE}"
+                --glslc "${GLSLC_EXECUTABLE}"
+        RESULT_VARIABLE ZERO_GLSLANG_RET
+    )
+    if(NOT ZERO_GLSLANG_RET EQUAL 0)
+        message(FATAL_ERROR "Zero-Glslang shader compilation failed! (code: ${ZERO_GLSLANG_RET})")
+    endif()
+endif()
+
 add_custom_target(ncnn-generate-spirv DEPENDS ${NCNN_SHADER_SPV_HEX_FILES})
 
 # create new

@@ -4,26 +4,11 @@ import argparse
 import subprocess
 import tempfile
 import zlib
-
-CORE_LAYERS = [
-    'batchnorm', 'binaryop', 'concat', 'convolution', 'crop', 'deconvolution',
-    'eltwise', 'flatten', 'innerproduct', 'interp', 'packing', 'padding',
-    'pixelshuffle', 'pooling', 'prelu', 'relu', 'reshape', 'scale', 'sigmoid', 'split'
-]
-
-EXCLUDED = ['1d', '3d', 'depthwise', 'cm', 'adaptive', 'direct', 'col2im', 'sum8']
-
-def is_whitelisted(shader_name):
-    low = shader_name.lower().replace('.comp', '')
-    match = any(low == c or low.startswith(c + '_') or low.startswith(c + '1') or low.startswith(c + '3') for c in CORE_LAYERS)
-    if not match:
-        return False
-    if any(e in low for e in EXCLUDED):
-        return False
-    return True
+from concurrent.futures import ThreadPoolExecutor
 
 ANIME_EXTS = '''
 #extension GL_EXT_shader_16bit_storage: require
+#extension GL_EXT_shader_explicit_arithmetic_types_float16: enable
 struct sfpvec8 { f16vec4 abcd; f16vec4 efgh; };
 '''
 
@@ -60,14 +45,16 @@ ANIME_PREAMBLE = ANIME_EXTS + '''
 #define buffer_cp8(buf,i,sbuf,si) {buf[i].abcd=sbuf[si].abcd;buf[i].efgh=sbuf[si].efgh;}
 #define buffer_cp8to1(buf,i4,ii4,sbuf,si) {buf[i4.r]=sbuf[si].abcd.r;buf[i4.g]=sbuf[si].abcd.g;buf[i4.b]=sbuf[si].abcd.b;buf[i4.a]=sbuf[si].abcd.a; buf[ii4.r]=sbuf[si].efgh.r;buf[ii4.g]=sbuf[si].efgh.g;buf[ii4.b]=sbuf[si].efgh.b;buf[ii4.a]=sbuf[si].efgh.a;}
 #define buffer_cp8to4(buf,i2,sbuf,si) {buf[i2.r]=sbuf[si].abcd;buf[i2.g]=sbuf[si].efgh;}
+#define sfp2afpmat4(v) v
+#define afp2sfpmat4(v) v
 #define psc(x) (x==0?p.x:x)
 #define NCNN_fp16_storage 1
 '''
 
 GENERAL_EXTS = '''
 #extension GL_EXT_shader_16bit_storage: require
-struct sfpvec8 { f16vec4 abcd; f16vec4 efgh; };
 #extension GL_EXT_shader_explicit_arithmetic_types_float16: require
+struct sfpvec8 { f16vec4 abcd; f16vec4 efgh; };
 '''
 
 GENERAL_PREAMBLE = GENERAL_EXTS + '''
@@ -113,6 +100,8 @@ GENERAL_PREAMBLE = GENERAL_EXTS + '''
 '''
 
 def find_glslc(ndk_dir):
+    if not ndk_dir:
+        return 'glslc'
     candidates = [
         os.path.join(ndk_dir, 'shader-tools', 'linux-x86_64', 'glslc'),
         os.path.join(ndk_dir, 'shader-tools', 'windows-x86_64', 'glslc.exe'),
@@ -128,88 +117,88 @@ def compile_single_shader(glslc, shader_path, include_dir, preamble):
         content = f.read()
     v_idx = content.find('#version 450')
     if v_idx == -1:
+        print(f"Error: No '#version 450' in {shader_path}", file=sys.stderr)
         return None
     new_content = content[:v_idx+12] + '\n' + preamble + '\n' + content[v_idx+12:]
-    with tempfile.NamedTemporaryFile(suffix='.comp', mode='w', delete=False) as tmp:
+    
+    with tempfile.NamedTemporaryFile(suffix='.comp', mode='w', delete=False, encoding='utf-8') as tmp:
         tmp.write(new_content)
         tmp_name = tmp.name
+        
     spv_name = tmp_name + '.spv'
     cmd = [glslc, f'-I{include_dir}', '--target-env=vulkan1.1', '-fshader-stage=compute', '-Os', tmp_name, '-o', spv_name]
-    res = subprocess.run(cmd, capture_output=True)
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    
     spv_bytes = None
     if res.returncode == 0 and os.path.exists(spv_name):
         with open(spv_name, 'rb') as spv_f:
             spv_bytes = spv_f.read()
+    else:
+        print(f"\n[Zero-Glslang] COMPILATION ERROR for {shader_path}:", file=sys.stderr)
+        print(res.stderr, file=sys.stderr)
+
     try:
-        os.remove(tmp_name)
+        if os.path.exists(tmp_name):
+            os.remove(tmp_name)
     except: pass
     try:
-        if os.path.exists(spv_name): os.remove(spv_name)
+        if os.path.exists(spv_name):
+            os.remove(spv_name)
     except: pass
+
     return spv_bytes
 
-def process_ncnn_shaders(target_type, repo_root, ndk_dir, output_dir):
-    ncnn_dir = os.path.join(repo_root, 'external', f'ncnn-{target_type}')
-    shader_dir = os.path.join(ncnn_dir, 'src', 'layer', 'vulkan', 'shader')
-    glslc = find_glslc(ndk_dir)
+def process_manifest(manifest_path, target_type, glslc, output_dir, include_dir):
     preamble = ANIME_PREAMBLE if target_type == 'anime' else GENERAL_PREAMBLE
 
-    cmake_path = os.path.join(ncnn_dir, 'src', 'CMakeLists.txt')
-    layer_names = []
-    with open(cmake_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith('ncnn_add_layer('):
-                arg = line.split('(')[1].split(')')[0].split()[0]
-                layer_names.append(arg.lower())
+    with open(manifest_path, 'r', encoding='utf-8') as f:
+        lines = [line.strip() for line in f if line.strip()]
 
-    ordered_shaders = []
-    for l in layer_names:
-        sh1 = f'{l}.comp'
-        if os.path.exists(os.path.join(shader_dir, sh1)):
-            ordered_shaders.append(sh1)
-        sub_files = [f for f in sorted(os.listdir(shader_dir)) if f.startswith(f'{l}_') and f.endswith('.comp')]
-        ordered_shaders.extend(sub_files)
+    print(f"[{target_type}] Processing manifest with {len(lines)} shaders via glslc: {glslc}")
 
-    if os.path.exists(os.path.join(ncnn_dir, 'src', 'convert_ycbcr.comp')):
-        ordered_shaders.append('convert_ycbcr.comp')
-    if os.path.exists(os.path.join(shader_dir, 'vulkan_activation.comp')):
-        ordered_shaders.append('vulkan_activation.comp')
+    tasks = []
+    for idx, line in enumerate(lines):
+        if line == 'STRIP':
+            tasks.append((idx, None))
+        else:
+            tasks.append((idx, line))
 
-    print(f'[{target_type}] Discovered {len(ordered_shaders)} shaders in exact registry order.')
+    def worker(item):
+        idx, p = item
+        if p is None:
+            return idx, None
+        spv = compile_single_shader(glslc, p, include_dir, preamble)
+        if spv is None:
+            raise RuntimeError(f"Failed to compile shader at index {idx}: {p}")
+        return idx, spv
+
+    results = [None] * len(tasks)
+    with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
+        for idx, spv in pool.map(worker, tasks):
+            results[idx] = spv
 
     raw_blob = bytearray()
     registry_entries = []
-
     compiled_count = 0
-    skipped_count = 0
+    stripped_count = 0
 
-    for idx, s_name in enumerate(ordered_shaders):
-        s_path = os.path.join(shader_dir, s_name)
-        if not os.path.exists(s_path):
-            s_path = os.path.join(ncnn_dir, 'src', s_name)
-
-        if is_whitelisted(s_name) and os.path.exists(s_path):
-            spv = compile_single_shader(glslc, s_path, shader_dir, preamble)
-            if spv and len(spv) > 0:
-                offset = len(raw_blob)
-                size = len(spv)
-                raw_blob.extend(spv)
-                registry_entries.append((offset, size))
-                compiled_count += 1
-            else:
-                registry_entries.append((0, 0))
-                skipped_count += 1
+    for idx, spv in enumerate(results):
+        if spv is not None and len(spv) > 0:
+            offset = len(raw_blob)
+            size = len(spv)
+            raw_blob.extend(spv)
+            registry_entries.append((offset, size))
+            compiled_count += 1
         else:
             registry_entries.append((0, 0))
-            skipped_count += 1
+            stripped_count += 1
 
     compressed_blob = zlib.compress(raw_blob, level=9)
-    print(f'[{target_type}] Compiled {compiled_count} shaders, skipped {skipped_count}.')
-    print(f'[{target_type}] Raw SPV size: {len(raw_blob)/1024:.1f} KB, Compressed size: {len(compressed_blob)/1024:.1f} KB')
+    print(f"[{target_type}] Finished: {compiled_count} compiled, {stripped_count} stripped.")
+    print(f"[{target_type}] Raw SPV size: {len(raw_blob)/1024:.1f} KB, Compressed size: {len(compressed_blob)/1024:.1f} KB")
 
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # 1. layer_shader_spv_blob.h
     blob_header = os.path.join(output_dir, 'layer_shader_spv_blob.h')
     with open(blob_header, 'w', encoding='utf-8') as f:
@@ -229,17 +218,18 @@ def process_ncnn_shaders(target_type, repo_root, ndk_dir, output_dir):
         for offset, size in registry_entries:
             f.write(f'{{{offset}, {size}}},\n')
 
-    print(f'[{target_type}] Generated {blob_header} and {reg_header}')
+    print(f"[{target_type}] Generated {blob_header} and {reg_header}")
 
-def process_filter_shaders(repo_root, ndk_dir):
-    glslc = find_glslc(ndk_dir)
+def process_filter_shaders(repo_root, glslc):
     dirs = [
         os.path.join(repo_root, 'src', 'realcugan'),
         os.path.join(repo_root, 'src', 'realsr'),
         os.path.join(repo_root, 'src', 'rife')
     ]
     for d in dirs:
-        for f in os.listdir(d):
+        if not os.path.exists(d):
+            continue
+        for f in sorted(os.listdir(d)):
             if f.endswith('.comp'):
                 p = os.path.join(d, f)
                 spv = compile_single_shader(glslc, p, d, ANIME_PREAMBLE)
@@ -248,27 +238,43 @@ def process_filter_shaders(repo_root, ndk_dir):
                     out_h = os.path.join(d, f'{base}.comp.hex.h')
                     with open(out_h, 'w', encoding='utf-8') as out_f:
                         out_f.write(f'// Auto-generated native SPIR-V header for {f}\n')
-                        out_f.write(f'static const char {base}_comp_data[] = {{\n')
+                        out_f.write(f'// Zero-Glslang precompiled\n\n')
+                        out_f.write(f'static const uint8_t {base}_comp_data[] = {{\n')
                         hex_items = [f'0x{b:02x}' for b in spv]
                         for i in range(0, len(hex_items), 16):
                             out_f.write('    ' + ', '.join(hex_items[i:i+16]) + ',\n')
                         out_f.write('};\n')
-                    print(f'[filter] Generated {os.path.basename(out_h)} ({len(spv)} bytes SPIR-V)')
+                    print(f"[filter] Generated {f}.hex.h ({len(spv)} bytes SPIR-V)")
+                else:
+                    raise RuntimeError(f"Failed to compile filter shader: {p}")
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--target', choices=['anime', 'general', 'filters', 'all'], required=True)
-    parser.add_argument('--ndk', default=os.environ.get('ANDROID_NDK', ''))
-    parser.add_argument('--repo', default=os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-    parser.add_argument('--outdir', default='')
+def main():
+    parser = argparse.ArgumentParser(description='Zero-Glslang Offline SPIR-V Builder')
+    parser.add_argument('--manifest', help='Path to shader manifest file')
+    parser.add_argument('--target-type', choices=['anime', 'general'], help='Target ncnn build type')
+    parser.add_argument('--output-dir', help='Directory to write generated headers')
+    parser.add_argument('--include-dir', help='Include directory for shader compilation')
+    parser.add_argument('--repo-root', default='.', help='Root of repository')
+    parser.add_argument('--ndk-dir', default=os.environ.get('ANDROID_NDK_HOME') or os.environ.get('ANDROID_NDK_ROOT'), help='Android NDK directory')
+    parser.add_argument('--glslc', help='Explicit glslc executable path')
+    parser.add_argument('--build-filters', action='store_true', help='Precompile custom filter shaders')
 
     args = parser.parse_args()
 
-    if args.target in ['anime', 'general', 'all']:
-        target_list = ['anime', 'general'] if args.target == 'all' else [args.target]
-        for t in target_list:
-            out = args.outdir if args.outdir else os.path.join(args.repo, 'external', f'ncnn-{t}', 'src')
-            process_ncnn_shaders(t, args.repo, args.ndk, out)
+    glslc = args.glslc or find_glslc(args.ndk_dir)
 
-    if args.target in ['filters', 'all']:
-        process_filter_shaders(args.repo, args.ndk)
+    if args.build_filters:
+        print(f"=== Precompiling Filter Shaders using {glslc} ===")
+        process_filter_shaders(args.repo_root, glslc)
+
+    if args.manifest:
+        if not args.target_type or not args.output_dir:
+            print("Error: --target-type and --output-dir are required with --manifest", file=sys.stderr)
+            sys.exit(1)
+        include_dir = args.include_dir
+        if not include_dir:
+            include_dir = os.path.join(args.repo_root, 'external', f'ncnn-{args.target_type}', 'src', 'layer', 'vulkan', 'shader')
+        process_manifest(args.manifest, args.target_type, glslc, args.output_dir, include_dir)
+
+if __name__ == '__main__':
+    main()

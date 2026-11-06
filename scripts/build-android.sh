@@ -285,9 +285,9 @@ PRUNED_LAYER_FLAGS_GEN=(
 mkdir -p "${BUILD_ROOT}"
 cd "${BUILD_ROOT}"
 
-# 1. 运行 Zero-Glslang 离线编译器：预编译全量核心着色器并压缩内嵌
-echo "=== [0/7] Executing Zero-Glslang Builder (NDK Native glslc) ==="
-python3 "${WORKSPACE_DIR}/scripts/zero_glslang_builder.py" --target all --ndk "${ANDROID_NDK_HOME}"
+# 1. 运行 Zero-Glslang 滤镜预编译器：预编译三大滤镜自定义着色器
+echo "=== [0/7] Precompiling Filter Shaders (NDK Native glslc) ==="
+python3 "${WORKSPACE_DIR}/scripts/zero_glslang_builder.py" --build-filters --repo-root "${WORKSPACE_DIR}" --ndk-dir "${ANDROID_NDK_ROOT}"
 
 
 # 3. 编译极简微型 OpenMP 共享库: libomp.so (基于 Tencent simpleomp)
