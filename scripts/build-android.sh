@@ -214,7 +214,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_PIXEL_DRAWING=OFF \
     -DNCNN_INT8=OFF \
     -DNCNN_BF16=OFF \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
     "${WORKSPACE_DIR}/external/ncnn-general"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -262,7 +262,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_PIXEL_DRAWING=OFF \
     -DNCNN_INT8=OFF \
     -DNCNN_BF16=OFF \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10 -Wl,--version-script=${WORKSPACE_DIR}/scripts/ncnn.sym" \
     "${WORKSPACE_DIR}/external/ncnn-anime"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -294,7 +294,7 @@ mkdir -p realcugan/build && cd realcugan/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-Dncnn_DIR=${INSTALL_ANIME}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
     "${WORKSPACE_DIR}/src/realcugan"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -307,7 +307,7 @@ mkdir -p rife/build && cd rife/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-Dncnn_DIR=${INSTALL_ANIME}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
     "${WORKSPACE_DIR}/src/rife"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -320,7 +320,7 @@ mkdir -p realsr/build && cd realsr/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
     "-Dncnn_DIR=${INSTALL_GEN}/lib/cmake/ncnn" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-static-openmp -Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
     "${WORKSPACE_DIR}/src/realsr"
 cmake --build . -j $(nproc)
 cd "${BUILD_ROOT}"
@@ -357,17 +357,32 @@ cp "${BUILD_ROOT}/rife/build/rife-ncnn-vulkan" "${JNI_LIBS_DIR}/librife_ncnn.so"
 cp "${BUILD_ROOT}/realsr/build/realsr-ncnn-vulkan" "${JNI_LIBS_DIR}/librealsr_ncnn.so"
 cp "${BUILD_ROOT}/rembg-ncnn/build/rembg-ncnn" "${JNI_LIBS_DIR}/librembg_ncnn.so"
 
-# 彻底移除动态 libomp.so 校验（各 CLI 静态链接 OpenMP 桩，无外部 libomp 依赖）
-READELF_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-readelf*" | head -n 1)
-if [ -n "${READELF_TOOL}" ]; then
-    echo "Running ELF dynamic dependency audit..."
-    for so in "${JNI_LIBS_DIR}"/*.so; do
-        if "${READELF_TOOL}" -d "${so}" 2>/dev/null | grep -q "libomp.so"; then
-            echo "ERROR: $(basename "${so}") still has DT_NEEDED on libomp.so!"
-            exit 1
-        fi
-    done
-    echo "Audit passed: No .so depends on libomp.so!"
+# 打包官方 NDK 标准共享库 libomp.so (支持多线程 OpenMP 全局单一实例)
+case "${ABI}" in
+    "arm64-v8a")
+        OMP_ARCH_PATTERN="aarch64"
+        ;;
+    "armeabi-v7a")
+        OMP_ARCH_PATTERN="arm"
+        ;;
+    "x86_64")
+        OMP_ARCH_PATTERN="x86_64"
+        ;;
+    "x86")
+        OMP_ARCH_PATTERN="i386|x86"
+        ;;
+    *)
+        OMP_ARCH_PATTERN="${ABI}"
+        ;;
+esac
+
+NDK_OMP=$(find "${ANDROID_NDK_ROOT}" -name "libomp.so" | grep -E "${OMP_ARCH_PATTERN}" | head -n 1)
+if [ -n "${NDK_OMP}" ]; then
+    echo "Bundling official NDK libomp.so: ${NDK_OMP}"
+    cp "${NDK_OMP}" "${JNI_LIBS_DIR}/libomp.so"
+else
+    echo "ERROR: NDK libomp.so for ${ABI} not found in ${ANDROID_NDK_ROOT}!"
+    exit 1
 fi
 
 # 查找 llvm-strip 剥除调试符号
@@ -375,6 +390,24 @@ STRIP_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-str
 if [ -n "${STRIP_TOOL}" ]; then
     echo "Stripping binaries with ${STRIP_TOOL}..."
     "${STRIP_TOOL}" --strip-unneeded "${JNI_LIBS_DIR}"/*.so
+fi
+
+# ELF 动态依赖与页面对齐审计
+READELF_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-readelf*" | head -n 1)
+if [ -n "${READELF_TOOL}" ]; then
+    echo "Running ELF dynamic dependency and alignment audit..."
+    for so in "${JNI_LIBS_DIR}"/*.so; do
+        echo "=== $(basename "${so}") ==="
+        "${READELF_TOOL}" -d "${so}" 2>/dev/null | grep -E "NEEDED|SONAME|RPATH" || true
+        align=$("${READELF_TOOL}" -l "${so}" 2>/dev/null | grep -A 1 "LOAD" | grep -oE "0x[0-9a-fA-F]+" | tail -n 1 || true)
+        echo "   Max alignment: ${align}"
+    done
+    
+    if [ ! -f "${JNI_LIBS_DIR}/libomp.so" ]; then
+        echo "ERROR: libomp.so is missing from ${JNI_LIBS_DIR}!"
+        exit 1
+    fi
+    echo "Audit passed: official libomp.so bundled and dynamic dependencies verified!"
 fi
 
 # ==============================================================================

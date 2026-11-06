@@ -251,8 +251,5 @@ if(USE_STATIC_MOLTENVK)
     )
 endif()
 
-if(OPENMP_FOUND)
-    list(APPEND REALSR_LINK_LIBRARIES -static-openmp)
-endif()
 
 target_link_libraries(realsr-ncnn-vulkan ${REALSR_LINK_LIBRARIES})

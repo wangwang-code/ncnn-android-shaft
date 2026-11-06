@@ -228,7 +228,7 @@ set_property(TARGET realcugan-ncnn-vulkan PROPERTY CXX_STANDARD 11)
 
 add_dependencies(realcugan-ncnn-vulkan generate-spirv)
 
-set(REALCUGAN_LINK_LIBRARIES ncnn -static-openmp webp ${Vulkan_LIBRARY})
+set(REALCUGAN_LINK_LIBRARIES ncnn webp ${Vulkan_LIBRARY})
 
 if(USE_STATIC_MOLTENVK)
     find_library(CoreFoundation NAMES CoreFoundation)

@@ -240,7 +240,7 @@ add_executable(rife-ncnn-vulkan
 
 add_dependencies(rife-ncnn-vulkan generate-spirv)
 
-set(RIFE_LINK_LIBRARIES ncnn -static-openmp webp ${Vulkan_LIBRARY})
+set(RIFE_LINK_LIBRARIES ncnn webp ${Vulkan_LIBRARY})
 
 if(USE_STATIC_MOLTENVK)
     find_library(CoreFoundation NAMES CoreFoundation)
