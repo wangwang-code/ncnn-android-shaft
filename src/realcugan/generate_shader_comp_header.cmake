@@ -1,5 +1,11 @@
-
 # must define SHADER_COMP_HEADER SHADER_SRC
+
+get_filename_component(SHADER_SRC_DIR ${SHADER_SRC} DIRECTORY)
+get_filename_component(SHADER_SRC_NAME_WE ${SHADER_SRC} NAME_WE)
+if(EXISTS "${SHADER_SRC_DIR}/${SHADER_SRC_NAME_WE}.comp.hex.h")
+    configure_file("${SHADER_SRC_DIR}/${SHADER_SRC_NAME_WE}.comp.hex.h" "${SHADER_COMP_HEADER}" COPYONLY)
+    return()
+endif()
 
 file(READ ${SHADER_SRC} comp_data)
 
@@ -9,8 +15,6 @@ string(SUBSTRING "${comp_data}" ${version_start} -1 comp_data)
 
 # remove whitespace
 string(REGEX REPLACE "\n +" "\n" comp_data "${comp_data}")
-
-get_filename_component(SHADER_SRC_NAME_WE ${SHADER_SRC} NAME_WE)
 
 # text to hex
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER_SRC_NAME_WE}.text2hex.txt "${comp_data}")

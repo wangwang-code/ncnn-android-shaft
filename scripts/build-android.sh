@@ -285,15 +285,9 @@ PRUNED_LAYER_FLAGS_GEN=(
 mkdir -p "${BUILD_ROOT}"
 cd "${BUILD_ROOT}"
 
-# 1. 链接共享 glslang 编译器源码至通用版与特例版 NCNN
-if [ ! -f "${WORKSPACE_DIR}/external/ncnn-general/glslang/CMakeLists.txt" ]; then
-    rm -rf "${WORKSPACE_DIR}/external/ncnn-general/glslang"
-    ln -sfn "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-general/glslang" 2>/dev/null || cp -r "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-general/glslang"
-fi
-if [ ! -f "${WORKSPACE_DIR}/external/ncnn-anime/glslang/CMakeLists.txt" ]; then
-    rm -rf "${WORKSPACE_DIR}/external/ncnn-anime/glslang"
-    ln -sfn "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-anime/glslang" 2>/dev/null || cp -r "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-anime/glslang"
-fi
+# 1. 运行 Zero-Glslang 离线编译器：预编译全量核心着色器并压缩内嵌
+echo "=== [0/7] Executing Zero-Glslang Builder (NDK Native glslc) ==="
+python3 "${WORKSPACE_DIR}/scripts/zero_glslang_builder.py" --target all --ndk "${ANDROID_NDK_HOME}"
 
 
 # 3. 编译极简微型 OpenMP 共享库: libomp.so (基于 Tencent simpleomp)
@@ -312,6 +306,7 @@ mkdir -p ncnn-general/build && cd ncnn-general/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "${PRUNED_LAYER_FLAGS_GEN[@]}" \
     -DNCNN_SHARED_LIB=ON \
+    -DNCNN_ZERO_GLSLANG=ON \
     -DNCNN_VULKAN=ON \
     -DNCNN_VULKAN_ONLINE_SPIRV=OFF \
     -DNCNN_CONV_5X5_7X7=0 \
@@ -386,6 +381,7 @@ mkdir -p ncnn-anime/build && cd ncnn-anime/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "${PRUNED_LAYER_FLAGS_ANIME[@]}" \
     -DNCNN_SHARED_LIB=ON \
+    -DNCNN_ZERO_GLSLANG=ON \
     -DNCNN_VULKAN=ON \
     -DNCNN_VULKAN_ONLINE_SPIRV=OFF \
     -DNCNN_CONV_5X5_7X7=0 \
