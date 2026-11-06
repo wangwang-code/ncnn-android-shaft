@@ -1,0 +1,65 @@
+name: Publish AAR to Maven Central Portal
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_version:
+        description: 'Maven Version to publish (e.g. 20241226-shaft-1.0.0)'
+        required: true
+      source_run_id:
+        description: 'GitHub Actions Run ID to fetch AAR from (leave empty to use latest successful build)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download AAR Artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p dist
+          RUN_ID="${{ github.event.inputs.source_run_id }}"
+          if [ -z "$RUN_ID" ]; then
+            echo "Searching for latest successful build-aar run..."
+            RUN_ID=$(gh run list --repo "${{ github.repository }}" --workflow build-aar.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          echo "Downloading AAR artifact from run $RUN_ID..."
+          gh run download "$RUN_ID" --repo "${{ github.repository }}" -n ncnn-android-shaft-aar -D dist/
+          ls -lh dist/ncnn-android-shaft.aar
+          echo "Downloaded AAR size: $(stat -c%s dist/ncnn-android-shaft.aar) bytes"
+
+      - name: Publish to Maven Central Portal
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSPHRASE }}
+          SONATYPE_CENTRAL_TOKEN: ${{ secrets.SONATYPE_CENTRAL_TOKEN }}
+        run: |
+          if [ -n "$GPG_PRIVATE_KEY" ]; then
+            echo "$GPG_PRIVATE_KEY" | gpg --batch --import || true
+          fi
+          VER="${{ github.event.inputs.artifact_version }}"
+          echo "Publishing verified AAR to Maven Central with version: $VER"
+          python3 ./publish_central.py \
+            --aar dist/ncnn-android-shaft.aar \
+            --group-id io.github.wangwang-code \
+            --artifact-id ncnn-android-shaft \
+            --version "$VER" \
+            --gpg-passphrase "$GPG_PASSPHRASE" \
+            --central-token "$SONATYPE_CENTRAL_TOKEN" \
+            --publishing-type AUTOMATIC
+
+      - name: Upload Central Bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-bundle
+          path: ./bundle.zip
+          if-no-files-found: ignore

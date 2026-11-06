@@ -1,26 +1,14 @@
-name: Build and Publish ncnn-android-shaft
+name: Build ncnn-android-shaft AAR
 
 on:
   workflow_dispatch:
     inputs:
-      ncnn_version:
-        description: 'Tencent/ncnn Git tag/branch'
-        required: true
-        default: '20241226'
       create_release:
         description: 'Publish as GitHub Release'
         type: boolean
-        default: true
-      publish_to_central:
-        description: 'Publish to Maven Central Portal'
-        type: boolean
-        default: true
-      artifact_version:
-        description: 'Version to publish (default: auto for 20241226-shaft-{commit_hash})'
-        required: false
-        default: 'auto'
+        default: false
       reuse_cached_aar:
-        description: 'Reuse previously built AAR (fast publish, skips compilation)'
+        description: 'Reuse previously built AAR artifact'
         type: boolean
         default: false
 
@@ -89,42 +77,9 @@ jobs:
           TAG_NAME="${{ github.ref_name }}"
           SHORT_SHA=$(git rev-parse --short HEAD)
           if [[ "$TAG_NAME" != v* ]]; then
-            TAG_NAME="v20241226-shaft-${SHORT_SHA}"
+            TAG_NAME="v$(date +'%Y%m%d')-shaft-${SHORT_SHA}"
           fi
           gh release create "$TAG_NAME" dist/ncnn-android-shaft.aar \
             --repo "${{ github.repository }}" \
             --title "NCNN Custom AAR ($TAG_NAME)" \
-            --notes "Custom unified NCNN AAR for Pixiv-Shaft: single libncnn.so (Vulkan enabled, static libc++), dynamically linked realcugan-ncnn (with TILE progress), rife-ncnn, realsr-ncnn, and rembg-ncnn. 16KB page aligned."
-
-      - name: Publish to Maven Central Portal
-        if: ${{ github.event.inputs.publish_to_central == 'true' || github.event.inputs.publish_to_central == '' }}
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSPHRASE }}
-          SONATYPE_CENTRAL_TOKEN: ${{ secrets.SONATYPE_CENTRAL_TOKEN }}
-        run: |
-          if [ -n "$GPG_PRIVATE_KEY" ]; then
-            echo "$GPG_PRIVATE_KEY" | gpg --batch --import || true
-          fi
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          VER="${{ github.event.inputs.artifact_version }}"
-          if [ -z "$VER" ] || [ "$VER" = "auto" ]; then
-            VER="20241226-shaft-${SHORT_SHA}"
-          fi
-          echo "Publishing version to Maven Central: $VER"
-          python3 ./publish_central.py \
-            --aar dist/ncnn-android-shaft.aar \
-            --group-id io.github.wangwang-code \
-            --artifact-id ncnn-android-shaft \
-            --version "$VER" \
-            --gpg-passphrase "$GPG_PASSPHRASE" \
-            --central-token "$SONATYPE_CENTRAL_TOKEN" \
-            --publishing-type AUTOMATIC
-
-      - name: Upload Central Bundle Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: central-bundle
-          path: ./bundle.zip
-          if-no-files-found: ignore
+            --notes "Custom dual-runtime NCNN AAR for Pixiv-Shaft: libncnn.so (general) + libncnn_anime.so (anime/video), 16KB page aligned."
