@@ -301,6 +301,7 @@ echo "=== [4/7] Compiling realcugan-ncnn-vulkan ==="
 mkdir -p realcugan/build && cd realcugan/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
+    "-DUSE_WEBP=OFF" \
     "-Dncnn_DIR=${INSTALL_ANIME}/lib/cmake/ncnn" \
     "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
     "${WORKSPACE_DIR}/src/realcugan"
@@ -314,6 +315,7 @@ echo "=== [5/7] Compiling rife-ncnn-vulkan ==="
 mkdir -p rife/build && cd rife/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
+    "-DUSE_WEBP=OFF" \
     "-Dncnn_DIR=${INSTALL_ANIME}/lib/cmake/ncnn" \
     "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
     "${WORKSPACE_DIR}/src/rife"
@@ -327,6 +329,7 @@ echo "=== [6/7] Compiling realsr-ncnn-vulkan ==="
 mkdir -p realsr/build && cd realsr/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
+    "-DUSE_WEBP=OFF" \
     "-Dncnn_DIR=${INSTALL_GEN}/lib/cmake/ncnn" \
     "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-rpath,\$ORIGIN -flto=thin -Wl,--gc-sections -Wl,--icf=all -Wl,-mllvm,-import-instr-limit=10" \
     "${WORKSPACE_DIR}/src/realsr"

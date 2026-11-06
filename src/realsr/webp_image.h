@@ -1,9 +1,11 @@
 #ifndef WEBP_IMAGE_H
 #define WEBP_IMAGE_H
 
-// webp image decoder and encoder with libwebp
 #include <stdio.h>
 #include <stdlib.h>
+
+#if USE_WEBP
+// webp image decoder and encoder with libwebp
 #include "webp/decode.h"
 #include "webp/encode.h"
 
@@ -98,9 +100,35 @@ int webp_save(const char* filepath, int w, int h, int c, const unsigned char* pi
 
 RETURN:
     if (output) WebPFree(output);
+
     if (fp) fclose(fp);
 
     return ret;
 }
+#else // USE_WEBP
+static inline unsigned char* webp_load(const unsigned char* buffer, int len, int* w, int* h, int* c)
+{
+    (void)buffer;
+    (void)len;
+    (void)w;
+    (void)h;
+    (void)c;
+    return NULL;
+}
+
+#if _WIN32
+static inline int webp_save(const wchar_t* filepath, int w, int h, int c, const unsigned char* pixeldata)
+#else
+static inline int webp_save(const char* filepath, int w, int h, int c, const unsigned char* pixeldata)
+#endif
+{
+    (void)filepath;
+    (void)w;
+    (void)h;
+    (void)c;
+    (void)pixeldata;
+    return 0;
+}
+#endif // USE_WEBP
 
 #endif // WEBP_IMAGE_H
