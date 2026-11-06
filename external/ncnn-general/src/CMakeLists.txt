@@ -44,6 +44,10 @@ set(ncnn_SRCS
     simplevk.cpp
 )
 
+if(NOT NCNN_C_API)
+    list(REMOVE_ITEM ncnn_SRCS c_api.cpp)
+endif()
+
 if(ANDROID)
     list(APPEND ncnn_SRCS mat_pixel_android.cpp)
 endif()

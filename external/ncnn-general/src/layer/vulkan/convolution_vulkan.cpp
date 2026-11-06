@@ -19,6 +19,10 @@
 
 namespace ncnn {
 
+#ifndef NCNN_COOPERATIVE_MATRIX
+#define NCNN_COOPERATIVE_MATRIX 0
+#endif
+
 Convolution_vulkan::Convolution_vulkan()
 {
     support_vulkan = true;
@@ -186,8 +190,13 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
 
     if (opt.use_winograd_convolution && (opt.use_winograd23_convolution || opt.use_winograd43_convolution) && is_conv3x3s1d1 && num_input >= 16 && num_output >= 16)
     {
+#if NCNN_COOPERATIVE_MATRIX
         bool use_cooperative_matrix_16_8_8 = vkdev->info.support_cooperative_matrix_16_8_8() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 8 == 0 && num_output % 8 == 0;
         bool use_cooperative_matrix_16_16_16 = vkdev->info.support_cooperative_matrix_16_16_16() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 16 == 0 && num_output % 16 == 0;
+#else
+        const bool use_cooperative_matrix_16_8_8 = false;
+        const bool use_cooperative_matrix_16_16_16 = false;
+#endif
 
         // winograd43 transform kernel
         if (opt.use_winograd43_convolution)
@@ -409,6 +418,7 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
                 if (elempack == 4 && out_elempack == 8) shader_type_index = LayerShaderType::convolution_pack4to8_3x3s1d1_winograd_gemm;
                 if (elempack == 8 && out_elempack == 4) shader_type_index = LayerShaderType::convolution_pack8to4_3x3s1d1_winograd_gemm;
 
+#if NCNN_COOPERATIVE_MATRIX
                 if (use_cooperative_matrix_16_8_8)
                 {
                     if (vkdev->info.support_VK_KHR_cooperative_matrix())
@@ -423,6 +433,7 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
                     else
                         shader_type_index = LayerShaderType::convolution_pack4_3x3s1d1_winograd_gemm_nv_cm_16_16_16;
                 }
+#endif
 
                 pipeline_convolution_3x3s1d1_winograd43_gemm = new Pipeline(vkdev);
                 if (use_cooperative_matrix_16_8_8)
@@ -687,6 +698,7 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
                 if (elempack == 4 && out_elempack == 8) shader_type_index = LayerShaderType::convolution_pack4to8_3x3s1d1_winograd_gemm;
                 if (elempack == 8 && out_elempack == 4) shader_type_index = LayerShaderType::convolution_pack8to4_3x3s1d1_winograd_gemm;
 
+#if NCNN_COOPERATIVE_MATRIX
                 if (use_cooperative_matrix_16_8_8)
                 {
                     if (vkdev->info.support_VK_KHR_cooperative_matrix())
@@ -701,6 +713,7 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
                     else
                         shader_type_index = LayerShaderType::convolution_pack4_3x3s1d1_winograd_gemm_nv_cm_16_16_16;
                 }
+#endif
 
                 pipeline_convolution_3x3s1d1_winograd23_gemm = new Pipeline(vkdev);
                 if (use_cooperative_matrix_16_8_8)
@@ -753,8 +766,13 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
         // dst = pa-pb-kw-kh-inch/pa-outch/pb
         if (opt.use_sgemm_convolution && !is_conv1x1s1d1 && num_input >= 16 && num_output >= 16)
         {
+#if NCNN_COOPERATIVE_MATRIX
             bool use_cooperative_matrix_16_8_8 = vkdev->info.support_cooperative_matrix_16_8_8() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 8 == 0 && num_output % 8 == 0;
             bool use_cooperative_matrix_16_16_16 = vkdev->info.support_cooperative_matrix_16_16_16() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 16 == 0 && num_output % 16 == 0;
+#else
+            const bool use_cooperative_matrix_16_8_8 = false;
+            const bool use_cooperative_matrix_16_16_16 = false;
+#endif
 
             if (use_cooperative_matrix_16_8_8)
             {
@@ -844,8 +862,13 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
         }
         else
         {
+#if NCNN_COOPERATIVE_MATRIX
             bool use_cooperative_matrix_16_8_8 = vkdev->info.support_cooperative_matrix_16_8_8() && opt.use_cooperative_matrix && is_conv1x1s1d1 && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 8 == 0 && num_output % 8 == 0;
             bool use_cooperative_matrix_16_16_16 = vkdev->info.support_cooperative_matrix_16_16_16() && opt.use_cooperative_matrix && is_conv1x1s1d1 && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 16 == 0 && num_output % 16 == 0;
+#else
+            const bool use_cooperative_matrix_16_8_8 = false;
+            const bool use_cooperative_matrix_16_16_16 = false;
+#endif
 
             if (use_cooperative_matrix_16_8_8)
             {
@@ -946,8 +969,13 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
     }
     else if (opt.use_sgemm_convolution && !is_conv1x1s1d1 && num_input >= 16 && num_output >= 16)
     {
+#if NCNN_COOPERATIVE_MATRIX
         bool use_cooperative_matrix_16_8_8 = vkdev->info.support_cooperative_matrix_16_8_8() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 8 == 0 && num_output % 8 == 0;
         bool use_cooperative_matrix_16_16_16 = vkdev->info.support_cooperative_matrix_16_16_16() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 16 == 0 && num_output % 16 == 0;
+#else
+        const bool use_cooperative_matrix_16_8_8 = false;
+        const bool use_cooperative_matrix_16_16_16 = false;
+#endif
 
         // check blob shape
         if (!vkdev->shape_support_image_storage(shape_bordered_packed) || !vkdev->shape_support_image_storage(out_shape_packed))
@@ -1002,6 +1030,7 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
         if (elempack == 4 && out_elempack == 8) shader_type_index = LayerShaderType::convolution_pack4to8_gemm;
         if (elempack == 8 && out_elempack == 4) shader_type_index = LayerShaderType::convolution_pack8to4_gemm;
 
+#if NCNN_COOPERATIVE_MATRIX
         if (use_cooperative_matrix_16_8_8)
         {
             if (vkdev->info.support_VK_KHR_cooperative_matrix())
@@ -1016,6 +1045,7 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
             else
                 shader_type_index = LayerShaderType::convolution_pack4_gemm_nv_cm_16_16_16;
         }
+#endif
 
         pipeline_convolution_gemm = new Pipeline(vkdev);
         if (use_cooperative_matrix_16_8_8)
@@ -1038,8 +1068,13 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
     }
     else if (is_conv1x1s1d1)
     {
+#if NCNN_COOPERATIVE_MATRIX
         bool use_cooperative_matrix_16_8_8 = vkdev->info.support_cooperative_matrix_16_8_8() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 8 == 0 && num_output % 8 == 0;
         bool use_cooperative_matrix_16_16_16 = vkdev->info.support_cooperative_matrix_16_16_16() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && num_input % 16 == 0 && num_output % 16 == 0;
+#else
+        const bool use_cooperative_matrix_16_8_8 = false;
+        const bool use_cooperative_matrix_16_16_16 = false;
+#endif
 
         std::vector<vk_specialization_type> specializations(4 + 8);
         specializations[0].i = bias_term;
@@ -1066,6 +1101,7 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
         if (elempack == 4 && out_elempack == 8) shader_type_index = LayerShaderType::convolution_pack4to8_1x1s1d1;
         if (elempack == 8 && out_elempack == 4) shader_type_index = LayerShaderType::convolution_pack8to4_1x1s1d1;
 
+#if NCNN_COOPERATIVE_MATRIX
         if (use_cooperative_matrix_16_8_8)
         {
             if (vkdev->info.support_VK_KHR_cooperative_matrix())
@@ -1080,6 +1116,7 @@ int Convolution_vulkan::create_pipeline(const Option& _opt)
             else
                 shader_type_index = LayerShaderType::convolution_pack4_1x1s1d1_nv_cm_16_16_16;
         }
+#endif
 
         pipeline_convolution_1x1s1d1 = new Pipeline(vkdev);
         if (use_cooperative_matrix_16_8_8)
@@ -1402,8 +1439,13 @@ int Convolution_vulkan::forward(const VkMat& bottom_blob, VkMat& top_blob, VkCom
 
     if (opt.use_winograd_convolution && (opt.use_winograd23_convolution || opt.use_winograd43_convolution) && is_conv3x3s1d1 && channels * elempack >= 16 && num_output >= 16)
     {
+#if NCNN_COOPERATIVE_MATRIX
         bool use_cooperative_matrix_16_8_8 = vkdev->info.support_cooperative_matrix_16_8_8() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && channels * elempack % 8 == 0 && num_output % 8 == 0;
         bool use_cooperative_matrix_16_16_16 = vkdev->info.support_cooperative_matrix_16_16_16() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && channels * elempack % 16 == 0 && num_output % 16 == 0;
+#else
+        const bool use_cooperative_matrix_16_8_8 = false;
+        const bool use_cooperative_matrix_16_16_16 = false;
+#endif
 
         bool pre_winograd43 = opt.use_winograd43_convolution;
         if (opt.use_winograd23_convolution)
@@ -1628,8 +1670,13 @@ int Convolution_vulkan::forward(const VkMat& bottom_blob, VkMat& top_blob, VkCom
     }
     if (opt.use_sgemm_convolution && !is_conv1x1s1d1 && channels * elempack >= 16 && num_output >= 16)
     {
+#if NCNN_COOPERATIVE_MATRIX
         bool use_cooperative_matrix_16_8_8 = vkdev->info.support_cooperative_matrix_16_8_8() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && channels * elempack % 8 == 0 && num_output % 8 == 0;
         bool use_cooperative_matrix_16_16_16 = vkdev->info.support_cooperative_matrix_16_16_16() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && channels * elempack % 16 == 0 && num_output % 16 == 0;
+#else
+        const bool use_cooperative_matrix_16_8_8 = false;
+        const bool use_cooperative_matrix_16_16_16 = false;
+#endif
 
         // gemm
         top_blob.create(outw, outh, num_output / out_elempack, out_elemsize, out_elempack, opt.blob_vkallocator);
@@ -1676,8 +1723,13 @@ int Convolution_vulkan::forward(const VkMat& bottom_blob, VkMat& top_blob, VkCom
     }
     if (is_conv1x1s1d1)
     {
+#if NCNN_COOPERATIVE_MATRIX
         bool use_cooperative_matrix_16_8_8 = vkdev->info.support_cooperative_matrix_16_8_8() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && channels * elempack % 8 == 0 && num_output % 8 == 0;
         bool use_cooperative_matrix_16_16_16 = vkdev->info.support_cooperative_matrix_16_16_16() && opt.use_cooperative_matrix && !opt.use_image_storage && !opt.use_shader_pack8 && opt.use_fp16_storage && channels * elempack % 16 == 0 && num_output % 16 == 0;
+#else
+        const bool use_cooperative_matrix_16_8_8 = false;
+        const bool use_cooperative_matrix_16_16_16 = false;
+#endif
 
         top_blob.create(outw, outh, num_output / out_elempack, out_elemsize, out_elempack, opt.blob_vkallocator);
         if (top_blob.empty())

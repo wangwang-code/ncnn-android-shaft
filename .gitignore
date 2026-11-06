@@ -1,5 +1,6 @@
 build*/
 dist/
+dist_*/
 aar-staging/
 central_bundle/
 *.aar
