@@ -48,6 +48,7 @@ COMMON_CMAKE_FLAGS=(
     "-DANDROID_PLATFORM=android-${API_LEVEL}"
     "-DANDROID_STL=c++_static"
     "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
+    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 )
 
 mkdir -p "${BUILD_ROOT}"
@@ -122,6 +123,10 @@ fi
 
 # 在 realcugan 自带的 2022 基线 submodule 中编译共享库，输出为 libncnn_anime.so
 cd "${BUILD_ROOT}/realcugan-ncnn-vulkan/src/ncnn"
+sed -i 's/cmake_minimum_required(VERSION [0-9\.]*)/cmake_minimum_required(VERSION 3.10)/g' CMakeLists.txt
+if [ -f "glslang/CMakeLists.txt" ]; then
+    sed -i 's/cmake_minimum_required(VERSION [0-9\.]*)/cmake_minimum_required(VERSION 3.10)/g' glslang/CMakeLists.txt
+fi
 # 设置动态库输出名称为 ncnn_anime，防止与通用 libncnn.so 混淆
 if ! grep -q "OUTPUT_NAME \"ncnn_anime\"" src/CMakeLists.txt; then
     echo 'set_target_properties(ncnn PROPERTIES OUTPUT_NAME "ncnn_anime")' >> src/CMakeLists.txt
