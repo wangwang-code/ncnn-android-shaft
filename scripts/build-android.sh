@@ -53,8 +53,8 @@ COMMON_CMAKE_FLAGS=(
     "-DANDROID_STL=c++_static"
     "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
     "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-    "-DCMAKE_CXX_FLAGS=-fno-rtti -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables -fvisibility=hidden -fvisibility-inlines-hidden -flto=thin"
-    "-DCMAKE_C_FLAGS=-fno-unwind-tables -fno-asynchronous-unwind-tables -fvisibility=hidden -flto=thin"
+    "-DCMAKE_CXX_FLAGS=-fno-rtti -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables -fvisibility=hidden -fvisibility-inlines-hidden -flto=thin -fno-unroll-loops"
+    "-DCMAKE_C_FLAGS=-fno-unwind-tables -fno-asynchronous-unwind-tables -fvisibility=hidden -flto=thin -fno-unroll-loops"
     "-DCMAKE_ASM_FLAGS=-fno-unwind-tables -fno-asynchronous-unwind-tables"
     "-DCMAKE_CXX_VISIBILITY_PRESET=hidden"
     "-DCMAKE_VISIBILITY_INLINES_HIDDEN=ON"
@@ -321,6 +321,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_POOLING_ADAPTIVE=OFF \
     -DNCNN_VULKAN_PACK8=OFF \
     -DNCNN_C_API=OFF \
+    -DNCNN_ARM82=OFF \
     -DNCNN_ARM82DOT=OFF \
     -DNCNN_ARM82FP16FML=OFF \
     -DNCNN_ARM84BF16=OFF \
@@ -330,6 +331,16 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_ARM86SVEBF16=OFF \
     -DNCNN_ARM86SVEI8MM=OFF \
     -DNCNN_ARM86SVEF32MM=OFF \
+    -DBUILD_EXTERNAL=OFF \
+    -DENABLE_SPVREMAPPER=OFF \
+    -DENABLE_GLSLANG_BINARIES=OFF \
+    -DENABLE_HLSL=OFF \
+    -DENABLE_RTTI=OFF \
+    -DENABLE_EXCEPTIONS=OFF \
+    -DENABLE_OPT=OFF \
+    -DENABLE_PCH=OFF \
+    -DGLSLANG_TESTS=OFF \
+    -DGLSLANG_ENABLE_INSTALL=OFF \
     -DNCNN_OPENMP=ON \
     -DNCNN_DISABLE_RTTI=ON \
     -DNCNN_DISABLE_EXCEPTION=ON \
@@ -385,6 +396,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_POOLING_ADAPTIVE=OFF \
     -DNCNN_VULKAN_PACK8=OFF \
     -DNCNN_C_API=OFF \
+    -DNCNN_ARM82=OFF \
     -DNCNN_ARM82DOT=OFF \
     -DNCNN_ARM82FP16FML=OFF \
     -DNCNN_ARM84BF16=OFF \
@@ -394,6 +406,16 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_ARM86SVEBF16=OFF \
     -DNCNN_ARM86SVEI8MM=OFF \
     -DNCNN_ARM86SVEF32MM=OFF \
+    -DBUILD_EXTERNAL=OFF \
+    -DENABLE_SPVREMAPPER=OFF \
+    -DENABLE_GLSLANG_BINARIES=OFF \
+    -DENABLE_HLSL=OFF \
+    -DENABLE_RTTI=OFF \
+    -DENABLE_EXCEPTIONS=OFF \
+    -DENABLE_OPT=OFF \
+    -DENABLE_PCH=OFF \
+    -DGLSLANG_TESTS=OFF \
+    -DGLSLANG_ENABLE_INSTALL=OFF \
     -DNCNN_OPENMP=ON \
     -DNCNN_DISABLE_RTTI=ON \
     -DNCNN_DISABLE_EXCEPTION=ON \
