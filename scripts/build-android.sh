@@ -88,6 +88,7 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_PIXEL_ROTATE=OFF \
     -DNCNN_PIXEL_AFFINE=OFF \
     -DNCNN_PIXEL_DRAWING=OFF \
+    -DNCNN_INT8=OFF \
     -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp" \
     ..
 cmake --build . -j $(nproc)
@@ -145,6 +146,10 @@ cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -DNCNN_BUILD_TOOLS=OFF \
     -DNCNN_BUILD_TESTS=OFF \
     -DNCNN_INSTALL_SDK=OFF \
+    -DNCNN_PIXEL_ROTATE=OFF \
+    -DNCNN_PIXEL_AFFINE=OFF \
+    -DNCNN_PIXEL_DRAWING=OFF \
+    -DNCNN_INT8=OFF \
     -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -static-openmp" \
     ..
 cmake --build . -j $(nproc)
@@ -179,16 +184,17 @@ sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
 sed -i 's/\${OpenMP_CXX_LIBRARIES}/-static-openmp/g' src/CMakeLists.txt
 
-# 注入精准安全的 TILE %d 进度
+# 注入精准安全的 TILE %d 进度，并禁用 int8_storage 确保走标准 from_pixels/to_pixels 规范化管线（修复伪彩色/负片异常）
 python3 -c '
 with open("src/realcugan.cpp", "r") as f:
     c = f.read()
 target = "for (int xi = 0; xi < xtiles; xi++)\n        {"
 if target in c and "TILE %d" not in c:
     c = c.replace(target, target + "\n            fprintf(stderr, \"TILE %d\\n\", yi * xtiles + xi); fflush(stderr);")
-    with open("src/realcugan.cpp", "w") as f:
-        f.write(c)
-    print("Injected TILE progress successfully.")
+c = c.replace("net.opt.use_int8_storage = true;", "net.opt.use_int8_storage = false;")
+with open("src/realcugan.cpp", "w") as f:
+    f.write(c)
+print("Patched realcugan.cpp (TILE progress + disabled int8_storage) successfully.")
 '
 mkdir -p build && cd build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
@@ -236,6 +242,16 @@ sed -i 's/set(USE_SYSTEM_NCNN OFF)/# set(USE_SYSTEM_NCNN OFF)/g' src/CMakeLists.
 sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
 sed -i 's/\${OpenMP_CXX_LIBRARIES}/-static-openmp/g' src/CMakeLists.txt
+
+# 禁用 int8_storage 确保走标准 from_pixels/to_pixels 规范化管线（避免部分移动 GPU 驱动出现色彩异常）
+python3 -c '
+with open("src/realsr.cpp", "r") as f:
+    c = f.read()
+c = c.replace("net.opt.use_int8_storage = true;", "net.opt.use_int8_storage = false;")
+with open("src/realsr.cpp", "w") as f:
+    f.write(c)
+print("Patched realsr.cpp (disabled int8_storage) successfully.")
+'
 
 mkdir -p build && cd build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
