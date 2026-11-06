@@ -25,6 +25,10 @@
 
 namespace ncnn {
 
+#ifndef NCNN_CONV_5X5_7X7
+#define NCNN_CONV_5X5_7X7 0
+#endif
+
 #if __ARM_NEON
 #if __ARM_FEATURE_FP16_VECTOR_ARITHMETIC
 #include "convolution_packed_fp16s.h"
@@ -39,8 +43,10 @@ namespace ncnn {
 #include "convolution_3x3_pack1to8_fp16s.h"
 #include "convolution_3x3_pack1to4_fp16s.h"
 #include "convolution_3x3_pack8_fp16s.h"
+#if NCNN_CONV_5X5_7X7
 #include "convolution_5x5_pack8_fp16s.h"
 #include "convolution_7x7_pack1to8_fp16s.h"
+#endif
 #endif // NCNN_GNU_INLINE_ASM
 #endif
 #endif // __ARM_NEON
@@ -506,6 +512,7 @@ int Convolution_arm::forward_fp16sa(const Mat& bottom_blob, Mat& top_blob, const
                 activation->forward_inplace(top_blob, opt);
             }
         }
+#if NCNN_CONV_5X5_7X7
         else if (kernel_w == 5 && kernel_h == 5 && dilation_w == 1 && dilation_h == 1 && stride_w == 1 && stride_h == 1)
         {
             conv5x5s1_pack8_fp16sa_neon(bottom_blob_bordered, top_blob, weight_data_tm, bias_data_fp16, opt);
@@ -524,6 +531,7 @@ int Convolution_arm::forward_fp16sa(const Mat& bottom_blob, Mat& top_blob, const
                 activation->forward_inplace(top_blob, opt);
             }
         }
+#endif
         else
         {
             convolution_packed_fp16sa(bottom_blob_bordered, top_blob, weight_data_tm, bias_data_fp16, kernel_w, kernel_h, dilation_w, dilation_h, stride_w, stride_h, activation_type, activation_params, opt);
@@ -550,6 +558,7 @@ int Convolution_arm::forward_fp16sa(const Mat& bottom_blob, Mat& top_blob, const
                 activation->forward_inplace(top_blob, opt);
             }
         }
+#if NCNN_CONV_5X5_7X7
         else if (kernel_w == 7 && kernel_h == 7 && dilation_w == 1 && dilation_h == 1 && stride_w == 2 && stride_h == 2)
         {
             conv7x7s2_pack1to8_fp16sa_neon(bottom_blob_bordered, top_blob, weight_data_tm, bias_data_fp16, opt);
@@ -559,6 +568,7 @@ int Convolution_arm::forward_fp16sa(const Mat& bottom_blob, Mat& top_blob, const
                 activation->forward_inplace(top_blob, opt);
             }
         }
+#endif
         else
         {
             convolution_packed_fp16sa(bottom_blob_bordered, top_blob, weight_data_tm, bias_data_fp16, kernel_w, kernel_h, dilation_w, dilation_h, stride_w, stride_h, activation_type, activation_params, opt);
