@@ -21,6 +21,10 @@
 
 namespace ncnn {
 
+#ifndef NCNN_POOLING_GLOBAL
+#define NCNN_POOLING_GLOBAL 1
+#endif
+
 Pooling_vulkan::Pooling_vulkan()
 {
     support_vulkan = true;
@@ -164,6 +168,7 @@ int Pooling_vulkan::create_pipeline(const Option& _opt)
 
     if (global_pooling)
     {
+#if NCNN_POOLING_GLOBAL
         // reduce first
         {
             std::vector<vk_specialization_type> specializations(6);
@@ -288,6 +293,10 @@ int Pooling_vulkan::create_pipeline(const Option& _opt)
                 pipeline_pooling_global_reduce_last_pack8->create(layer_shader_type, opt, specializations);
             }
         }
+
+#else
+        return -1;
+#endif
     }
     else if (adaptive_pooling)
     {
@@ -428,6 +437,7 @@ int Pooling_vulkan::destroy_pipeline(const Option& _opt)
     delete pipeline_pooling_adaptive_pack8;
     pipeline_pooling_adaptive_pack8 = 0;
 
+#if NCNN_POOLING_GLOBAL
     delete pipeline_pooling_global_reduce_first;
     pipeline_pooling_global_reduce_first = 0;
 
@@ -454,6 +464,7 @@ int Pooling_vulkan::destroy_pipeline(const Option& _opt)
 
     delete pipeline_pooling_global_reduce_last_pack8;
     pipeline_pooling_global_reduce_last_pack8 = 0;
+#endif
 
     return 0;
 }
@@ -478,6 +489,7 @@ int Pooling_vulkan::forward(const VkMat& bottom_blob, VkMat& top_blob, VkCompute
 
     if (global_pooling)
     {
+#if NCNN_POOLING_GLOBAL
         // reduce first
         VkMat reduced_blob;
         {
@@ -575,6 +587,10 @@ int Pooling_vulkan::forward(const VkMat& bottom_blob, VkMat& top_blob, VkCompute
         }
 
         return 0;
+
+#else
+        return -1;
+#endif
     }
 
     if (adaptive_pooling)
@@ -764,6 +780,7 @@ int Pooling_vulkan::forward(const VkImageMat& bottom_blob, VkImageMat& top_blob,
 
     if (global_pooling)
     {
+#if NCNN_POOLING_GLOBAL
         // reduce first
         VkImageMat reduced_blob;
         {
@@ -861,6 +878,10 @@ int Pooling_vulkan::forward(const VkImageMat& bottom_blob, VkImageMat& top_blob,
         }
 
         return 0;
+
+#else
+        return -1;
+#endif
     }
 
     if (adaptive_pooling)
