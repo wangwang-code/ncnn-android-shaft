@@ -248,7 +248,7 @@ def process_filter_shaders(repo_root, glslc):
                     with open(out_h, 'w', encoding='utf-8') as out_f:
                         out_f.write(f'// Auto-generated native SPIR-V header for {f}\n')
                         out_f.write(f'// Zero-Glslang precompiled\n\n')
-                        out_f.write(f'static const uint8_t {base}_comp_data[] = {{\n')
+                        out_f.write(f'static const char {base}_comp_data[] = {{\n')
                         hex_items = [f'0x{b:02x}' for b in spv]
                         for i in range(0, len(hex_items), 16):
                             out_f.write('    ' + ', '.join(hex_items[i:i+16]) + ',\n')
