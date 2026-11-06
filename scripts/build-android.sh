@@ -184,17 +184,113 @@ sed -i '/include.*GLSLANG_TARGET_DIR/d' src/CMakeLists.txt
 sed -i '/GLSLANG_TARGET_DIR must be defined/d' src/CMakeLists.txt
 sed -i 's/\${OpenMP_CXX_LIBRARIES}/-static-openmp/g' src/CMakeLists.txt
 
-# 注入精准安全的 TILE %d 进度，并禁用 int8_storage 确保走标准 from_pixels/to_pixels 规范化管线（修复伪彩色/负片异常）
+# 注入精准安全的 TILE %d 单调递增行级进度（对齐 4.9.9 旧版二进制行为，消除高频 I/O 卡慢与超界溢出），并禁用 int8_storage 确保走标准 from_pixels/to_pixels 规范化管线（修复伪彩色/负片异常）
 python3 -c '
 with open("src/realcugan.cpp", "r") as f:
     c = f.read()
-target = "for (int xi = 0; xi < xtiles; xi++)\n        {"
-if target in c and "TILE %d" not in c:
-    c = c.replace(target, target + "\n            fprintf(stderr, \"TILE %d\\n\", yi * xtiles + xi); fflush(stderr);")
+
+# 1. 顶部注入全局单调递增计数器
+counter_def = "\nstatic int g_cugan_tile_done = 0;\n"
+if "static int g_cugan_tile_done" not in c:
+    c = counter_def + c
+
+# 2. 在 process 入口处重置计数器
+p_entry = "int RealCUGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const\n{"
+if p_entry in c:
+    c = c.replace(p_entry, p_entry + "\n    g_cugan_tile_done = 0;")
+
+# 3. 在 process_se_very_rough_stage0 的 yi 行循环末尾汇报一行进度
+s0_vr_target = """        cmd.submit_and_wait();
+        cmd.reset();
+    }
+
+    return 0;
+}
+
+int RealCUGAN::process_se_very_rough_sync_gap"""
+s0_vr_replace = """        cmd.submit_and_wait();
+        cmd.reset();
+
+        fprintf(stderr, "TILE %d\\n", ++g_cugan_tile_done);
+        fflush(stderr);
+    }
+
+    return 0;
+}
+
+int RealCUGAN::process_se_very_rough_sync_gap"""
+c = c.replace(s0_vr_target, s0_vr_replace)
+
+# 4. 在 process_se_stage0 的 yi 行循环末尾汇报一行进度
+s0_target = """        cmd.submit_and_wait();
+        cmd.reset();
+    }
+
+    return 0;
+}
+
+int RealCUGAN::process_se_stage2"""
+s0_replace = """        cmd.submit_and_wait();
+        cmd.reset();
+
+        fprintf(stderr, "TILE %d\\n", ++g_cugan_tile_done);
+        fflush(stderr);
+    }
+
+    return 0;
+}
+
+int RealCUGAN::process_se_stage2"""
+c = c.replace(s0_target, s0_replace)
+
+# 5. 在 process_se_stage2 的 yi 行循环末尾汇报一行进度
+s2_target = """                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+int RealCUGAN::process_se_sync_gap"""
+s2_replace = """                }
+            }
+        }
+
+        fprintf(stderr, "TILE %d\\n", ++g_cugan_tile_done);
+        fflush(stderr);
+    }
+
+    return 0;
+}
+
+int RealCUGAN::process_se_sync_gap"""
+c = c.replace(s2_target, s2_replace)
+
+# 6. 在普通 process 的 yi 行循环末尾汇报一行进度
+p_target = """                }
+            }
+        }
+    }
+
+    vkdev->reclaim_blob_allocator(blob_vkallocator);"""
+p_replace = """                }
+            }
+        }
+
+        fprintf(stderr, "TILE %d\\n", ++g_cugan_tile_done);
+        fflush(stderr);
+    }
+
+    vkdev->reclaim_blob_allocator(blob_vkallocator);"""
+c = c.replace(p_target, p_replace)
+
+# 7. 禁用 int8 存储
 c = c.replace("net.opt.use_int8_storage = true;", "net.opt.use_int8_storage = false;")
+
 with open("src/realcugan.cpp", "w") as f:
     f.write(c)
-print("Patched realcugan.cpp (TILE progress + disabled int8_storage) successfully.")
+print("Patched realcugan.cpp successfully (monotonic row-level TILE progress + disabled int8_storage).")
 '
 mkdir -p build && cd build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
