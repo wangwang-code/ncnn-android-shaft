@@ -319,7 +319,7 @@ if(NCNN_DISABLE_RTTI)
 endif()
 
 if(NCNN_DISABLE_EXCEPTION)
-    target_compile_options(ncnn PUBLIC -fno-exceptions)
+    target_compile_options(ncnn PUBLIC -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables)
 endif()
 
 if(NCNN_TARGET_ARCH STREQUAL "x86")

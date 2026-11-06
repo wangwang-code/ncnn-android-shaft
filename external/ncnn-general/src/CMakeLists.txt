@@ -390,7 +390,7 @@ if(NCNN_DISABLE_EXCEPTION)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_SIMULATE_ID MATCHES "MSVC" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT MATCHES "MSVC"))
         target_compile_options(ncnn PUBLIC /EHsc /D_HAS_EXCEPTIONS=0)
     else()
-        target_compile_options(ncnn PUBLIC -fno-exceptions)
+        target_compile_options(ncnn PUBLIC -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables)
     endif()
 endif()
 
