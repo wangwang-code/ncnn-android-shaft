@@ -192,10 +192,18 @@ for mod in realcugan rife realsr; do
     fi
 done
 
+# 3. 编译极简微型 OpenMP 共享库: libomp.so (基于 Tencent simpleomp)
+echo "=== [1/7] Compiling Minimal libomp.so (simpleomp) ==="
+mkdir -p simpleomp/build && cd simpleomp/build
+cmake "${COMMON_CMAKE_FLAGS[@]}" \
+    "${WORKSPACE_DIR}/src/simpleomp"
+cmake --build . -j $(nproc)
+cd "${BUILD_ROOT}"
+
 # ==============================================================================
 # 2. 构建通用 NCNN 共享库: libncnn.so (基于 external/ncnn-general)
 # ==============================================================================
-echo "=== [1/6] Compiling General libncnn.so ==="
+echo "=== [2/7] Compiling General libncnn.so ==="
 mkdir -p ncnn-general/build && cd ncnn-general/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "${PRUNED_LAYER_FLAGS[@]}" \
@@ -241,7 +249,7 @@ EOF
 # ==============================================================================
 # 3. 构建特例二次元 NCNN 共享库: libncnn_anime.so (基于 external/ncnn-anime)
 # ==============================================================================
-echo "=== [2/6] Compiling Anime-Specialized libncnn_anime.so ==="
+echo "=== [3/7] Compiling Anime-Specialized libncnn_anime.so ==="
 mkdir -p ncnn-anime/build && cd ncnn-anime/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "${PRUNED_LAYER_FLAGS[@]}" \
@@ -289,7 +297,7 @@ EOF
 # ==============================================================================
 # 4. 编译 realcugan-ncnn-vulkan (动态链接 libncnn_anime.so)
 # ==============================================================================
-echo "=== [3/6] Compiling realcugan-ncnn-vulkan ==="
+echo "=== [4/7] Compiling realcugan-ncnn-vulkan ==="
 mkdir -p realcugan/build && cd realcugan/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
@@ -302,7 +310,7 @@ cd "${BUILD_ROOT}"
 # ==============================================================================
 # 5. 编译 rife-ncnn-vulkan (动态链接 libncnn_anime.so，原生完美保留 pack8)
 # ==============================================================================
-echo "=== [4/6] Compiling rife-ncnn-vulkan ==="
+echo "=== [5/7] Compiling rife-ncnn-vulkan ==="
 mkdir -p rife/build && cd rife/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
@@ -315,7 +323,7 @@ cd "${BUILD_ROOT}"
 # ==============================================================================
 # 6. 编译 realsr-ncnn-vulkan (动态链接通用 libncnn.so)
 # ==============================================================================
-echo "=== [5/6] Compiling realsr-ncnn-vulkan ==="
+echo "=== [6/7] Compiling realsr-ncnn-vulkan ==="
 mkdir -p realsr/build && cd realsr/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     "-DUSE_SYSTEM_NCNN=ON" \
@@ -328,7 +336,7 @@ cd "${BUILD_ROOT}"
 # ==============================================================================
 # 7. 编译 rembg-ncnn (动态链接通用 libncnn.so)
 # ==============================================================================
-echo "=== [6/6] Compiling rembg-ncnn ==="
+echo "=== [7/7] Compiling rembg-ncnn ==="
 mkdir -p rembg-ncnn/build && cd rembg-ncnn/build
 cmake "${COMMON_CMAKE_FLAGS[@]}" \
     -Dncnn_DIR="${INSTALL_GEN}/lib/cmake/ncnn" \
@@ -357,33 +365,9 @@ cp "${BUILD_ROOT}/rife/build/rife-ncnn-vulkan" "${JNI_LIBS_DIR}/librife_ncnn.so"
 cp "${BUILD_ROOT}/realsr/build/realsr-ncnn-vulkan" "${JNI_LIBS_DIR}/librealsr_ncnn.so"
 cp "${BUILD_ROOT}/rembg-ncnn/build/rembg-ncnn" "${JNI_LIBS_DIR}/librembg_ncnn.so"
 
-# 打包官方 NDK 标准共享库 libomp.so (支持多线程 OpenMP 全局单一实例)
-case "${ABI}" in
-    "arm64-v8a")
-        OMP_ARCH_PATTERN="aarch64"
-        ;;
-    "armeabi-v7a")
-        OMP_ARCH_PATTERN="arm"
-        ;;
-    "x86_64")
-        OMP_ARCH_PATTERN="x86_64"
-        ;;
-    "x86")
-        OMP_ARCH_PATTERN="i386|x86"
-        ;;
-    *)
-        OMP_ARCH_PATTERN="${ABI}"
-        ;;
-esac
-
-NDK_OMP=$(find "${ANDROID_NDK_ROOT}" -name "libomp.so" | grep -E "${OMP_ARCH_PATTERN}" | head -n 1)
-if [ -n "${NDK_OMP}" ]; then
-    echo "Bundling official NDK libomp.so: ${NDK_OMP}"
-    cp "${NDK_OMP}" "${JNI_LIBS_DIR}/libomp.so"
-else
-    echo "ERROR: NDK libomp.so for ${ABI} not found in ${ANDROID_NDK_ROOT}!"
-    exit 1
-fi
+# 打包基于 Tencent simpleomp 构建的极简微型 libomp.so (极致缩减 97% 体积)
+echo "Bundling minimal libomp.so: ${BUILD_ROOT}/simpleomp/build/libomp.so"
+cp "${BUILD_ROOT}/simpleomp/build/libomp.so" "${JNI_LIBS_DIR}/libomp.so"
 
 # 查找 llvm-strip 剥除调试符号
 STRIP_TOOL=$(find "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt" -name "llvm-strip*" | head -n 1)

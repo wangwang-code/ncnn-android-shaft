@@ -1,0 +1,9 @@
+{
+    global:
+        omp_*;
+        kmp_*;
+        __kmpc_*;
+        GOMP_*;
+    local:
+        *;
+};
