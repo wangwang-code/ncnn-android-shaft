@@ -174,9 +174,9 @@ static void to_rgb(const Mat& m, unsigned char* rgb, int stride)
             float32x4_t _blow = vld1q_f32(ptr2);
             float32x4_t _bhigh = vld1q_f32(ptr2 + 4);
 
-            int16x8_t _r16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_rlow)), vmovn_s32(vcvtq_s32_f32(_rhigh)));
-            int16x8_t _g16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_glow)), vmovn_s32(vcvtq_s32_f32(_ghigh)));
-            int16x8_t _b16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_blow)), vmovn_s32(vcvtq_s32_f32(_bhigh)));
+            int16x8_t _r16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_rlow)), vqmovn_s32(vcvtq_s32_f32(_rhigh)));
+            int16x8_t _g16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_glow)), vqmovn_s32(vcvtq_s32_f32(_ghigh)));
+            int16x8_t _b16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_blow)), vqmovn_s32(vcvtq_s32_f32(_bhigh)));
 
             uint8x8x3_t _rgb;
             _rgb.val[0] = vqmovun_s16(_r16);
@@ -329,7 +329,7 @@ static void to_gray(const Mat& m, unsigned char* gray, int stride)
             float32x4_t _glow = vld1q_f32(ptr);
             float32x4_t _ghigh = vld1q_f32(ptr + 4);
 
-            int16x8_t _g16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_glow)), vmovn_s32(vcvtq_s32_f32(_ghigh)));
+            int16x8_t _g16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_glow)), vqmovn_s32(vcvtq_s32_f32(_ghigh)));
 
             uint8x8_t _gray = vqmovun_s16(_g16);
 
@@ -522,10 +522,10 @@ static void to_rgba(const Mat& m, unsigned char* rgba, int stride)
             float32x4_t _alow = vld1q_f32(ptr3);
             float32x4_t _ahigh = vld1q_f32(ptr3 + 4);
 
-            int16x8_t _r16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_rlow)), vmovn_s32(vcvtq_s32_f32(_rhigh)));
-            int16x8_t _g16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_glow)), vmovn_s32(vcvtq_s32_f32(_ghigh)));
-            int16x8_t _b16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_blow)), vmovn_s32(vcvtq_s32_f32(_bhigh)));
-            int16x8_t _a16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_alow)), vmovn_s32(vcvtq_s32_f32(_ahigh)));
+            int16x8_t _r16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_rlow)), vqmovn_s32(vcvtq_s32_f32(_rhigh)));
+            int16x8_t _g16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_glow)), vqmovn_s32(vcvtq_s32_f32(_ghigh)));
+            int16x8_t _b16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_blow)), vqmovn_s32(vcvtq_s32_f32(_bhigh)));
+            int16x8_t _a16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_alow)), vqmovn_s32(vcvtq_s32_f32(_ahigh)));
 
             uint8x8x4_t _rgba;
             _rgba.val[0] = vqmovun_s16(_r16);
@@ -711,9 +711,9 @@ static void to_bgr2rgb(const Mat& m, unsigned char* rgb, int stride)
             float32x4_t _blow = vld1q_f32(ptr0);
             float32x4_t _bhigh = vld1q_f32(ptr0 + 4);
 
-            int16x8_t _r16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_rlow)), vmovn_s32(vcvtq_s32_f32(_rhigh)));
-            int16x8_t _g16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_glow)), vmovn_s32(vcvtq_s32_f32(_ghigh)));
-            int16x8_t _b16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_blow)), vmovn_s32(vcvtq_s32_f32(_bhigh)));
+            int16x8_t _r16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_rlow)), vqmovn_s32(vcvtq_s32_f32(_rhigh)));
+            int16x8_t _g16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_glow)), vqmovn_s32(vcvtq_s32_f32(_ghigh)));
+            int16x8_t _b16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_blow)), vqmovn_s32(vcvtq_s32_f32(_bhigh)));
 
             uint8x8x3_t _rgb;
             _rgb.val[0] = vqmovun_s16(_r16);
@@ -899,9 +899,9 @@ static void to_rgb2rgba(const Mat& m, unsigned char* rgba, int stride)
             float32x4_t _blow = vld1q_f32(ptr2);
             float32x4_t _bhigh = vld1q_f32(ptr2 + 4);
 
-            int16x8_t _r16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_rlow)), vmovn_s32(vcvtq_s32_f32(_rhigh)));
-            int16x8_t _g16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_glow)), vmovn_s32(vcvtq_s32_f32(_ghigh)));
-            int16x8_t _b16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_blow)), vmovn_s32(vcvtq_s32_f32(_bhigh)));
+            int16x8_t _r16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_rlow)), vqmovn_s32(vcvtq_s32_f32(_rhigh)));
+            int16x8_t _g16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_glow)), vqmovn_s32(vcvtq_s32_f32(_ghigh)));
+            int16x8_t _b16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_blow)), vqmovn_s32(vcvtq_s32_f32(_bhigh)));
 
             uint8x8x4_t _rgba;
             _rgba.val[0] = vqmovun_s16(_r16);
@@ -1089,9 +1089,9 @@ static void to_bgr2rgba(const Mat& m, unsigned char* rgba, int stride)
             float32x4_t _blow = vld1q_f32(ptr0);
             float32x4_t _bhigh = vld1q_f32(ptr0 + 4);
 
-            int16x8_t _r16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_rlow)), vmovn_s32(vcvtq_s32_f32(_rhigh)));
-            int16x8_t _g16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_glow)), vmovn_s32(vcvtq_s32_f32(_ghigh)));
-            int16x8_t _b16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_blow)), vmovn_s32(vcvtq_s32_f32(_bhigh)));
+            int16x8_t _r16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_rlow)), vqmovn_s32(vcvtq_s32_f32(_rhigh)));
+            int16x8_t _g16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_glow)), vqmovn_s32(vcvtq_s32_f32(_ghigh)));
+            int16x8_t _b16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_blow)), vqmovn_s32(vcvtq_s32_f32(_bhigh)));
 
             uint8x8x4_t _rgba;
             _rgba.val[0] = vqmovun_s16(_r16);
@@ -1288,7 +1288,7 @@ static void to_gray2rgba(const Mat& m, unsigned char* rgba, int stride)
             float32x4_t _glow = vld1q_f32(ptr);
             float32x4_t _ghigh = vld1q_f32(ptr + 4);
 
-            int16x8_t _g16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_glow)), vmovn_s32(vcvtq_s32_f32(_ghigh)));
+            int16x8_t _g16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_glow)), vqmovn_s32(vcvtq_s32_f32(_ghigh)));
 
             uint8x8_t _gray = vqmovun_s16(_g16);
 
@@ -1818,10 +1818,10 @@ static void to_rgba2bgra(const Mat& m, unsigned char* bgra, int stride)
             float32x4_t _alow = vld1q_f32(ptr3);
             float32x4_t _ahigh = vld1q_f32(ptr3 + 4);
 
-            int16x8_t _r16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_rlow)), vmovn_s32(vcvtq_s32_f32(_rhigh)));
-            int16x8_t _g16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_glow)), vmovn_s32(vcvtq_s32_f32(_ghigh)));
-            int16x8_t _b16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_blow)), vmovn_s32(vcvtq_s32_f32(_bhigh)));
-            int16x8_t _a16 = vcombine_s16(vmovn_s32(vcvtq_s32_f32(_alow)), vmovn_s32(vcvtq_s32_f32(_ahigh)));
+            int16x8_t _r16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_rlow)), vqmovn_s32(vcvtq_s32_f32(_rhigh)));
+            int16x8_t _g16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_glow)), vqmovn_s32(vcvtq_s32_f32(_ghigh)));
+            int16x8_t _b16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_blow)), vqmovn_s32(vcvtq_s32_f32(_bhigh)));
+            int16x8_t _a16 = vcombine_s16(vqmovn_s32(vcvtq_s32_f32(_alow)), vqmovn_s32(vcvtq_s32_f32(_ahigh)));
 
             uint8x8x4_t _bgra;
             _bgra.val[0] = vqmovun_s16(_b16);

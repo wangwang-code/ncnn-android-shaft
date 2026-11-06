@@ -2095,7 +2095,7 @@ int RIFE::process_cpu(const ncnn::Mat& in0image, const ncnn::Mat& in1image, floa
                         float v = (*ptr0++ + *ptr1-- + *ptr2-- + *ptr3++ + *ptr4 + *ptr5 + *ptr6 + *ptr7) / 8;
                         float vr = (*ptrr0++ + *ptrr1-- + *ptrr2-- + *ptrr3++ + *ptrr4 + *ptrr5 + *ptrr6 + *ptrr7) / 8;
 
-                        *outptr++ = (v + vr) * 0.5f * 255.f + 0.5f;
+                        *outptr++ = std::min(std::max((v + vr) * 0.5f * 255.f + 0.5f, 0.f), 255.f);
                     }
                 }
             }
@@ -2130,7 +2130,7 @@ int RIFE::process_cpu(const ncnn::Mat& in0image, const ncnn::Mat& in1image, floa
 
                         float v = (*ptr0++ + *ptr1-- + *ptr2-- + *ptr3++ + *ptr4 + *ptr5 + *ptr6 + *ptr7) / 8;
 
-                        *outptr++ = v * 255.f + 0.5f;
+                        *outptr++ = std::min(std::max(v * 255.f + 0.5f, 0.f), 255.f);
                     }
                 }
             }
@@ -2424,7 +2424,7 @@ int RIFE::process_cpu(const ncnn::Mat& in0image, const ncnn::Mat& in1image, floa
                 {
                     for (int j = 0; j < w; j++)
                     {
-                        *outptr++ = (*ptr++ + *ptr1++) * 0.5f * 255.f + 0.5f;
+                        *outptr++ = std::min(std::max((*ptr++ + *ptr1++) * 0.5f * 255.f + 0.5f, 0.f), 255.f);
                     }
                 }
             }
@@ -2440,7 +2440,7 @@ int RIFE::process_cpu(const ncnn::Mat& in0image, const ncnn::Mat& in1image, floa
                 {
                     for (int j = 0; j < w; j++)
                     {
-                        *outptr++ = *ptr++ * 255.f + 0.5f;
+                        *outptr++ = std::min(std::max(*ptr++ * 255.f + 0.5f, 0.f), 255.f);
                     }
                 }
             }
@@ -4102,7 +4102,7 @@ int RIFE::process_v4_cpu(const ncnn::Mat& in0image, const ncnn::Mat& in1image, f
                         float v = (*ptr0++ + *ptr1-- + *ptr2-- + *ptr3++ + *ptr4 + *ptr5 + *ptr6 + *ptr7) / 8;
                         float vr = (*ptrr0++ + *ptrr1-- + *ptrr2-- + *ptrr3++ + *ptrr4 + *ptrr5 + *ptrr6 + *ptrr7) / 8;
 
-                        *outptr++ = (v + vr) * 0.5f * 255.f + 0.5f;
+                        *outptr++ = std::min(std::max((v + vr) * 0.5f * 255.f + 0.5f, 0.f), 255.f);
                     }
                 }
             }
@@ -4137,7 +4137,7 @@ int RIFE::process_v4_cpu(const ncnn::Mat& in0image, const ncnn::Mat& in1image, f
 
                         float v = (*ptr0++ + *ptr1-- + *ptr2-- + *ptr3++ + *ptr4 + *ptr5 + *ptr6 + *ptr7) / 8;
 
-                        *outptr++ = v * 255.f + 0.5f;
+                        *outptr++ = std::min(std::max(v * 255.f + 0.5f, 0.f), 255.f);
                     }
                 }
             }
@@ -4365,7 +4365,7 @@ int RIFE::process_v4_cpu(const ncnn::Mat& in0image, const ncnn::Mat& in1image, f
                 {
                     for (int j = 0; j < w; j++)
                     {
-                        *outptr++ = (*ptr++ + *ptr1++) * 0.5f * 255.f + 0.5f;
+                        *outptr++ = std::min(std::max((*ptr++ + *ptr1++) * 0.5f * 255.f + 0.5f, 0.f), 255.f);
                     }
                 }
             }
@@ -4381,7 +4381,7 @@ int RIFE::process_v4_cpu(const ncnn::Mat& in0image, const ncnn::Mat& in1image, f
                 {
                     for (int j = 0; j < w; j++)
                     {
-                        *outptr++ = *ptr++ * 255.f + 0.5f;
+                        *outptr++ = std::min(std::max(*ptr++ * 255.f + 0.5f, 0.f), 255.f);
                     }
                 }
             }

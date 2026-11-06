@@ -718,7 +718,7 @@ int RealSR::process_cpu(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
 
                                 float v = (*ptr0++ + *ptr1++ + *ptr2-- + *ptr3-- + *ptr4 + *ptr5 + *ptr6 + *ptr7) / 8;
 
-                                *outptr++ = v * 255.f + 0.5f;
+                                *outptr++ = std::min(std::max(v * 255.f + 0.5f, 0.f), 255.f);
                             }
                         }
                     }
@@ -801,7 +801,7 @@ int RealSR::process_cpu(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
 
                             for (int j = 0; j < out.w; j++)
                             {
-                                *outptr++ = *ptr++ * 255.f + 0.5f;
+                                *outptr++ = std::min(std::max(*ptr++ * 255.f + 0.5f, 0.f), 255.f);
                             }
                         }
                     }

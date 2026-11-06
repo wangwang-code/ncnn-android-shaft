@@ -99,6 +99,6 @@ void main()
 #else
     int v_offset = gz * p.outcstep + gy * p.outw + gx + p.offset_x;
 
-    top_blob_data[v_offset] = v;
+    top_blob_data[v_offset] = clamp(v, 0.0f, 255.0f);
 #endif
 }
