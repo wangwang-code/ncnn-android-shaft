@@ -169,15 +169,14 @@ PRUNED_LAYER_FLAGS=(
 mkdir -p "${BUILD_ROOT}"
 cd "${BUILD_ROOT}"
 
-# 1. 确保 stb 头文件供 rembg 使用
-mkdir -p "${WORKSPACE_DIR}/src/rembg"
-if [ ! -f "${WORKSPACE_DIR}/src/rembg/stb_image.h" ]; then
-    echo "Downloading stb_image.h..."
-    curl -sSL "https://raw.githubusercontent.com/nothings/stb/master/stb_image.h" -o "${WORKSPACE_DIR}/src/rembg/stb_image.h"
+# 1. 链接共享 glslang 编译器源码至通用版与特例版 NCNN
+if [ ! -f "${WORKSPACE_DIR}/external/ncnn-general/glslang/CMakeLists.txt" ]; then
+    rm -rf "${WORKSPACE_DIR}/external/ncnn-general/glslang"
+    ln -sfn "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-general/glslang" 2>/dev/null || cp -r "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-general/glslang"
 fi
-if [ ! -f "${WORKSPACE_DIR}/src/rembg/stb_image_write.h" ]; then
-    echo "Downloading stb_image_write.h..."
-    curl -sSL "https://raw.githubusercontent.com/nothings/stb/master/stb_image_write.h" -o "${WORKSPACE_DIR}/src/rembg/stb_image_write.h"
+if [ ! -f "${WORKSPACE_DIR}/external/ncnn-anime/glslang/CMakeLists.txt" ]; then
+    rm -rf "${WORKSPACE_DIR}/external/ncnn-anime/glslang"
+    ln -sfn "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-anime/glslang" 2>/dev/null || cp -r "${WORKSPACE_DIR}/external/glslang" "${WORKSPACE_DIR}/external/ncnn-anime/glslang"
 fi
 
 # ==============================================================================
