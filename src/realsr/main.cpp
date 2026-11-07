@@ -105,7 +105,7 @@ static void print_usage()
     fprintf(stderr, "  -v                   verbose output\n");
     fprintf(stderr, "  -i input-path        input image path (jpg/png/webp) or directory\n");
     fprintf(stderr, "  -o output-path       output image path (jpg/png/webp) or directory\n");
-    fprintf(stderr, "  -s scale             upscale ratio (4, default=4)\n");
+    fprintf(stderr, "  -s scale             upscale ratio (2/4, default=4)\n");
     fprintf(stderr, "  -t tile-size         tile size (>=32/0=auto, default=0) can be 0,0,0 for multi-gpu\n");
     fprintf(stderr, "  -m model-path        realsr model path (default=models-DF2K_JPEG)\n");
     fprintf(stderr, "  -g gpu-id            gpu device to use (-1=cpu, default=auto) can be 0,1,2 for multi-gpu\n");
@@ -530,7 +530,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    if (scale != 4)
+    if (scale != 2 && scale != 4)
     {
         fprintf(stderr, "invalid scale argument\n");
         return -1;
@@ -658,35 +658,26 @@ int main(int argc, char** argv)
         }
     }
 
-    int prepadding = 0;
+    int prepadding = 10;
 
     if (model.find(PATHSTR("models-DF2K")) != path_t::npos
-        || model.find(PATHSTR("models-DF2K_JPEG")) != path_t::npos)
+        || model.find(PATHSTR("models-DF2K_JPEG")) != path_t::npos
+        || model.find(PATHSTR("models-Real-ESRGAN")) != path_t::npos
+        || model.find(PATHSTR("models-ESRGAN")) != path_t::npos)
     {
         prepadding = 10;
-    }
-    else
-    {
-        fprintf(stderr, "unknown model dir type\n");
-        return -1;
     }
 
 #if _WIN32
     wchar_t parampath[256];
     wchar_t modelpath[256];
-    if (scale == 4)
-    {
-        swprintf(parampath, 256, L"%s/x4.param", model.c_str());
-        swprintf(modelpath, 256, L"%s/x4.bin", model.c_str());
-    }
+    swprintf(parampath, 256, L"%s/x%d.param", model.c_str(), scale);
+    swprintf(modelpath, 256, L"%s/x%d.bin", model.c_str(), scale);
 #else
     char parampath[256];
     char modelpath[256];
-    if (scale == 4)
-    {
-        sprintf(parampath, "%s/x4.param", model.c_str());
-        sprintf(modelpath, "%s/x4.bin", model.c_str());
-    }
+    sprintf(parampath, "%s/x%d.param", model.c_str(), scale);
+    sprintf(modelpath, "%s/x%d.bin", model.c_str(), scale);
 #endif
 
     path_t paramfullpath = sanitize_filepath(parampath);
@@ -783,11 +774,11 @@ int main(int argc, char** argv)
 
             realsr[i] = new RealSR(gpuid[i], tta_mode, num_threads);
 
-            realsr[i]->load(paramfullpath, modelfullpath);
-
             realsr[i]->scale = scale;
             realsr[i]->tilesize = tilesize[i];
             realsr[i]->prepadding = prepadding;
+
+            realsr[i]->load(paramfullpath, modelfullpath);
         }
 
         // main routine
