@@ -1,6 +1,8 @@
 build*/
 dist/
 dist_*/
+artifacts*/
+test_pkg/
 aar-staging/
 central_bundle/
 *.aar
