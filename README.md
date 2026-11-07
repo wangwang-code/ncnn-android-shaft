@@ -154,7 +154,7 @@ Pixiv-Shaft 内部深度集成了 4 项前沿视觉 AI 特性：
 
 ```toml
 [versions]
-ncnn-shaft = "20241226-shaft-1.0.0"
+ncnn-shaft = "20241226-shaft-66b0714" # 或 "20241226-shaft-+" 动态拉取最新修复版
 
 [libraries]
 ncnn-android-shaft = { module = "io.github.wangwang-code:ncnn-android-shaft", version.ref = "ncnn-shaft" }
