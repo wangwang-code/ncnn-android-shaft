@@ -137,10 +137,19 @@ int main(int argc, char** argv) {
         fflush(stderr);
 
         // 5. 后处理与生成 Alpha 通道
-        // 如果是 letterbox，先裁剪有效区域
+        // 如果是 letterbox，先裁剪有效区域 (纯内存按行切片，零算子依赖，杜绝 crop 算子缺失引发的段错误)
         ncnn::Mat valid_mask;
         if (profile == "isnet-anime" && (pad_w > 0 || pad_h > 0)) {
-            ncnn::copy_cut_border(out_mat, valid_mask, 0, pad_h, 0, pad_w);
+            int valid_w = target_size - pad_w;
+            int valid_h = target_size - pad_h;
+            valid_mask.create(valid_w, valid_h, out_mat.c, sizeof(float));
+            for (int q = 0; q < out_mat.c; q++) {
+                const float* ptr = out_mat.channel(q);
+                float* outptr = valid_mask.channel(q);
+                for (int y = 0; y < valid_h; y++) {
+                    memcpy(outptr + y * valid_w, ptr + y * target_size, valid_w * sizeof(float));
+                }
+            }
         } else {
             valid_mask = out_mat;
         }

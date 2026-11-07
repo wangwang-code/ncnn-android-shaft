@@ -627,7 +627,7 @@ void __kmpc_fork_call(void* /*loc*/, int32_t argc, kmpc_micro fn, ...)
     }
 }
 
-void __kmpc_for_static_init_4(void* /*loc*/, int32_t gtid, int32_t /*sched*/, int32_t* last, int32_t* lower, int32_t* upper, int32_t* /*stride*/, int32_t /*incr*/, int32_t /*chunk*/)
+void __kmpc_for_static_init_4(void* /*loc*/, int32_t gtid, int32_t /*sched*/, int32_t* last, int32_t* lower, int32_t* upper, int32_t* stride, int32_t incr, int32_t /*chunk*/)
 {
     // NCNN_LOGE("__kmpc_for_static_init_4");
     int num_threads = omp_get_num_threads();
@@ -635,15 +635,27 @@ void __kmpc_for_static_init_4(void* /*loc*/, int32_t gtid, int32_t /*sched*/, in
     // TODO only support i++
     int32_t count = *upper - *lower + 1;
     int32_t threads = std::min(count, (int32_t)num_threads);
+    if (threads < 1) threads = 1;
+
+    if (gtid >= threads)
+    {
+        *lower = *upper + 1;
+        *last = 0;
+        if (stride) *stride = (count + 1) * (incr > 0 ? 1 : -1);
+        return;
+    }
+
     int32_t count_per_thread = count / threads;
     int32_t remain = count % threads;
 
     *last = gtid == (int32_t)(threads - 1);
     *lower = gtid * count_per_thread + std::min(remain, gtid);
     *upper = std::min((gtid + 1) * count_per_thread + std::min(remain, gtid + 1) - 1, *upper);
+    if (stride)
+        *stride = (count + 1) * (incr > 0 ? 1 : -1);
 }
 
-void __kmpc_for_static_init_4u(void* /*loc*/, int32_t gtid, int32_t /*sched*/, int32_t* last, uint32_t* lower, uint32_t* upper, int32_t* /*stride*/, int32_t /*incr*/, int32_t /*chunk*/)
+void __kmpc_for_static_init_4u(void* /*loc*/, int32_t gtid, int32_t /*sched*/, int32_t* last, uint32_t* lower, uint32_t* upper, int32_t* stride, int32_t incr, int32_t /*chunk*/)
 {
     // NCNN_LOGE("__kmpc_for_static_init_4u");
     int num_threads = omp_get_num_threads();
@@ -651,15 +663,27 @@ void __kmpc_for_static_init_4u(void* /*loc*/, int32_t gtid, int32_t /*sched*/, i
     // TODO only support i++
     uint32_t count = *upper - *lower + 1;
     uint32_t threads = std::min(count, (uint32_t)num_threads);
+    if (threads < 1) threads = 1;
+
+    if ((uint32_t)gtid >= threads)
+    {
+        *lower = *upper + 1;
+        *last = 0;
+        if (stride) *stride = (int32_t)(count + 1) * (incr > 0 ? 1 : -1);
+        return;
+    }
+
     uint32_t count_per_thread = count / threads;
     uint32_t remain = count % threads;
 
     *last = gtid == (int32_t)(threads - 1);
     *lower = gtid * count_per_thread + std::min(remain, (uint32_t)gtid);
     *upper = std::min((gtid + 1) * count_per_thread + std::min(remain, (uint32_t)gtid + 1) - 1, *upper);
+    if (stride)
+        *stride = (int32_t)(count + 1) * (incr > 0 ? 1 : -1);
 }
 
-void __kmpc_for_static_init_8(void* /*loc*/, int32_t gtid, int32_t /*sched*/, int32_t* last, int64_t* lower, int64_t* upper, int64_t* /*stride*/, int64_t /*incr*/, int64_t /*chunk*/)
+void __kmpc_for_static_init_8(void* /*loc*/, int32_t gtid, int32_t /*sched*/, int32_t* last, int64_t* lower, int64_t* upper, int64_t* stride, int64_t incr, int64_t /*chunk*/)
 {
     // NCNN_LOGE("__kmpc_for_static_init_8");
     int num_threads = omp_get_num_threads();
@@ -667,15 +691,27 @@ void __kmpc_for_static_init_8(void* /*loc*/, int32_t gtid, int32_t /*sched*/, in
     // TODO only support i++
     int64_t count = *upper - *lower + 1;
     int64_t threads = std::min(count, (int64_t)num_threads);
+    if (threads < 1) threads = 1;
+
+    if ((int64_t)gtid >= threads)
+    {
+        *lower = *upper + 1;
+        *last = 0;
+        if (stride) *stride = (count + 1) * (incr > 0 ? 1 : -1);
+        return;
+    }
+
     int64_t count_per_thread = count / threads;
     int64_t remain = count % threads;
 
     *last = gtid == (int64_t)(threads - 1);
     *lower = gtid * count_per_thread + std::min(remain, (int64_t)gtid);
     *upper = std::min((gtid + 1) * count_per_thread + std::min(remain, (int64_t)gtid + 1) - 1, *upper);
+    if (stride)
+        *stride = (count + 1) * (incr > 0 ? 1 : -1);
 }
 
-void __kmpc_for_static_init_8u(void* /*loc*/, int32_t gtid, int32_t /*sched*/, int32_t* last, uint64_t* lower, uint64_t* upper, int64_t* /*stride*/, int64_t /*incr*/, int64_t /*chunk*/)
+void __kmpc_for_static_init_8u(void* /*loc*/, int32_t gtid, int32_t /*sched*/, int32_t* last, uint64_t* lower, uint64_t* upper, int64_t* stride, int64_t incr, int64_t /*chunk*/)
 {
     // NCNN_LOGE("__kmpc_for_static_init_8u");
     int num_threads = omp_get_num_threads();
@@ -683,12 +719,24 @@ void __kmpc_for_static_init_8u(void* /*loc*/, int32_t gtid, int32_t /*sched*/, i
     // TODO only support i++
     uint64_t count = *upper - *lower + 1;
     uint64_t threads = std::min(count, (uint64_t)num_threads);
+    if (threads < 1) threads = 1;
+
+    if ((uint64_t)gtid >= threads)
+    {
+        *lower = *upper + 1;
+        *last = 0;
+        if (stride) *stride = (int64_t)(count + 1) * (incr > 0 ? 1 : -1);
+        return;
+    }
+
     uint64_t count_per_thread = count / threads;
     uint64_t remain = count % threads;
 
     *last = gtid == (int64_t)(threads - 1);
     *lower = gtid * count_per_thread + std::min(remain, (uint64_t)gtid);
     *upper = std::min((gtid + 1) * count_per_thread + std::min(remain, (uint64_t)gtid + 1) - 1, *upper);
+    if (stride)
+        *stride = (int64_t)(count + 1) * (incr > 0 ? 1 : -1);
 }
 
 void __kmpc_for_static_fini(void* /*loc*/, int32_t gtid)

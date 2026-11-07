@@ -311,7 +311,6 @@ void* load(void* args)
     const LoadThreadParams* ltp = (const LoadThreadParams*)args;
     const int count = ltp->output_files.size();
 
-    #pragma omp parallel for schedule(static,1) num_threads(ltp->jobs_load)
     for (int i=0; i<count; i++)
     {
         const path_t& image0path = ltp->input0_files[i];
@@ -327,7 +326,7 @@ void* load(void* args)
         int ret0 = decode_image(image0path, v.in0image, &v.webp0);
         int ret1 = decode_image(image1path, v.in1image, &v.webp1);
 
-        if (ret0 != 0 || ret1 != 1)
+        if (ret0 == 0 && ret1 == 0)
         {
             v.outimage = ncnn::Mat(v.in0image.w, v.in0image.h, (size_t)3, 3);
             toproc.put(v);
